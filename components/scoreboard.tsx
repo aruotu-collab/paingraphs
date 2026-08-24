@@ -1,5 +1,5 @@
 import Link from "next/link";
-import type { Opportunity } from "@/lib/sample-data";
+import type { Opportunity } from "@/lib/opportunities";
 
 function Score({ value }: { value: number }) {
   const tone =
@@ -11,8 +11,7 @@ export function Scoreboard({ items }: { items: Opportunity[] }) {
   if (items.length === 0) {
     return (
       <div className="border border-dashed border-line px-6 py-16 text-center text-muted">
-        No matching pain clusters yet. Try another market, or wait for Phase 1
-        live ingest.
+        No matching pain clusters yet. Try another market, or a broader search.
       </div>
     );
   }

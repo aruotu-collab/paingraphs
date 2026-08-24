@@ -11,7 +11,7 @@ export default async function SignupPage({
       <div className="mb-10 text-center">
         <h1 className="font-display text-4xl">Create an account</h1>
         <p className="mt-3 text-muted">
-          Free for Phase 0. Live intelligence unlocks as the graph fills.
+          Save markets and come back as the live graph fills.
         </p>
       </div>
       <AuthForm mode="signup" next={next} />

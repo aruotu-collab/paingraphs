@@ -3,7 +3,7 @@ import { listSavedMarkets } from "@/lib/actions";
 import { MarketSearch } from "@/components/market-search";
 import { SaveMarketButton } from "@/components/save-market-button";
 import { Scoreboard } from "@/components/scoreboard";
-import { searchOpportunities } from "@/lib/sample-data";
+import { searchOpportunities } from "@/lib/opportunities";
 import { getSession } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
@@ -13,7 +13,7 @@ export default async function OpportunitiesPage({
 }: PageProps<"/opportunities">) {
   const params = await searchParams;
   const query = typeof params.q === "string" ? params.q : "";
-  const items = searchOpportunities(query);
+  const items = await searchOpportunities(query);
   const session = await getSession();
   const saved = await listSavedMarkets();
 
@@ -37,7 +37,7 @@ export default async function OpportunitiesPage({
       </div>
       {query ? (
         <p className="mt-5 text-sm text-muted">
-          Showing sample matches for{" "}
+          Showing live matches for{" "}
           <span className="text-paper">“{query}”</span>
         </p>
       ) : null}

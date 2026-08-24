@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "eslint",
     "db:push": "drizzle-kit push",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "ingest": "tsx scripts/ingest.ts",
+    "ingest:reset": "tsx scripts/ingest.ts --reset"
   },
   "dependencies": {
     "@libsql/client": "^0.17.4",

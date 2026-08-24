@@ -1,15 +1,17 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getOpportunity } from "@/lib/sample-data";
+import { getOpportunity } from "@/lib/opportunities";
+
+export const dynamic = "force-dynamic";
 
 export default async function OpportunityDetailPage({
   params,
 }: PageProps<"/opportunities/[slug]">) {
   const { slug } = await params;
-  const item = getOpportunity(slug);
+  const item = await getOpportunity(slug);
   if (!item) notFound();
 
-  const maxTrend = Math.max(...item.trend);
+  const maxTrend = Math.max(...item.trend, 1);
 
   return (
     <main className="mx-auto w-full max-w-5xl flex-1 px-5 py-10">
@@ -66,10 +68,22 @@ export default async function OpportunityDetailPage({
           </h3>
           <ul className="mt-4 space-y-4">
             {item.quotes.map((quote) => (
-              <li key={quote.text} className="border border-line p-4">
+              <li key={`${quote.url}-${quote.text}`} className="border border-line p-4">
                 <p className="text-paper">“{quote.text}”</p>
                 <p className="mt-2 text-xs text-muted">
-                  {quote.source} · {quote.date} · sample
+                  {quote.url ? (
+                    <a
+                      href={quote.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="hover:text-copper-2"
+                    >
+                      {quote.source}
+                    </a>
+                  ) : (
+                    quote.source
+                  )}{" "}
+                  · {quote.date}
                 </p>
               </li>
             ))}
@@ -95,24 +109,36 @@ export default async function OpportunityDetailPage({
             <h3 className="text-xs uppercase tracking-[0.16em] text-muted">
               Current workarounds
             </h3>
-            <ul className="mt-3 space-y-2 text-sm text-paper">
-              {item.workarounds.map((itemName) => (
-                <li key={itemName}>{itemName}</li>
-              ))}
-            </ul>
+            {item.workarounds.length === 0 ? (
+              <p className="mt-3 text-sm text-muted">
+                No workaround named in the evidence yet.
+              </p>
+            ) : (
+              <ul className="mt-3 space-y-2 text-sm text-paper">
+                {item.workarounds.map((itemName) => (
+                  <li key={itemName}>{itemName}</li>
+                ))}
+              </ul>
+            )}
           </div>
           <div>
             <h3 className="text-xs uppercase tracking-[0.16em] text-muted">
               Existing solutions
             </h3>
-            <ul className="mt-3 space-y-3 text-sm">
-              {item.solutions.map((solution) => (
-                <li key={solution.name}>
-                  <div className="text-paper">{solution.name}</div>
-                  <div className="text-muted">{solution.gap}</div>
-                </li>
-              ))}
-            </ul>
+            {item.solutions.length === 0 ? (
+              <p className="mt-3 text-sm text-muted">
+                No incumbent named in the evidence yet.
+              </p>
+            ) : (
+              <ul className="mt-3 space-y-3 text-sm">
+                {item.solutions.map((solution) => (
+                  <li key={solution.name}>
+                    <div className="text-paper">{solution.name}</div>
+                    <div className="text-muted">{solution.gap}</div>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         </aside>
       </section>

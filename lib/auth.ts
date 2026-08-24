@@ -7,10 +7,20 @@ import * as schema from "@/lib/db/schema";
 
 const appUrl = getAppUrl();
 
+const trustedOrigins = Array.from(
+  new Set([
+    appUrl,
+    "http://localhost:3000",
+    "https://paingraphs.com",
+    "https://www.paingraphs.com",
+    "https://paingraphs.vercel.app",
+  ]),
+);
+
 export const auth = betterAuth({
   baseURL: appUrl,
   secret: process.env.BETTER_AUTH_SECRET,
-  trustedOrigins: [appUrl, "http://localhost:3000"],
+  trustedOrigins,
   database: drizzleAdapter(db, {
     provider: "sqlite",
     schema,
