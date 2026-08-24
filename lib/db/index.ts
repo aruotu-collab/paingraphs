@@ -4,7 +4,10 @@ import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import * as schema from "./schema";
 
-const url = process.env.DATABASE_URL ?? "file:./data/paingraphs.db";
+const url =
+  process.env.TURSO_DATABASE_URL ??
+  process.env.DATABASE_URL ??
+  "file:./data/paingraphs.db";
 
 if (url.startsWith("file:")) {
   mkdirSync(dirname(url.replace(/^file:/, "")), { recursive: true });
