@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { PurgeVisitsButton } from "@/components/purge-visits-button";
+import { formatStamp } from "@/lib/admin/format";
 import { listVisits, sourceLabel } from "@/lib/admin/visits";
 import { requireAdmin } from "@/lib/session";
 
@@ -90,7 +91,7 @@ export default async function AdminVisitsPage({
                 return (
                   <tr key={row.id} className="border-t border-line align-top">
                     <td className="py-3 pr-3 font-mono text-xs whitespace-nowrap">
-                      {row.createdAt.toISOString().replace("T", " ").slice(0, 19)}
+                      {formatStamp(row.createdAt)}
                     </td>
                     <td className="py-3 pr-3">
                       <Link href={row.path} className="text-paper hover:text-copper-2">

@@ -1,3 +1,4 @@
+import { formatStamp } from "@/lib/admin/format";
 import { loadAdminUsers } from "@/lib/admin/actions";
 import { isAdminEmail } from "@/lib/admin";
 import { requireAdmin } from "@/lib/session";
@@ -41,16 +42,14 @@ export default async function AdminUsersPage() {
                   </div>
                 </td>
                 <td className="py-3 pr-3 font-mono text-xs">
-                  {person.createdAt.toISOString().slice(0, 10)}
+                  {formatStamp(person.createdAt, "date")}
                 </td>
                 <td className="py-3 pr-3 font-mono">{person.sessionCount}</td>
                 <td className="py-3 pr-3 font-mono text-xs">
                   {person.lastIp || "—"}
                 </td>
                 <td className="py-3 font-mono text-xs">
-                  {person.lastSeen
-                    ? person.lastSeen.toISOString().replace("T", " ").slice(0, 19)
-                    : "—"}
+                  {formatStamp(person.lastSeen)}
                 </td>
               </tr>
             ))}

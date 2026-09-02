@@ -157,83 +157,103 @@ export async function listVisits(input: {
     filters.push(gte(pageVisits.createdAt, new Date(input.sinceMs)));
   }
   const where = filters.length ? and(...filters) : undefined;
-  return db
-    .select()
-    .from(pageVisits)
-    .where(where)
-    .orderBy(desc(pageVisits.createdAt))
-    .limit(input.limit ?? 250);
+  try {
+    return await db
+      .select()
+      .from(pageVisits)
+      .where(where)
+      .orderBy(desc(pageVisits.createdAt))
+      .limit(input.limit ?? 250);
+  } catch (error) {
+    console.warn("listVisits failed:", error);
+    return [];
+  }
 }
 
 export async function visitStats() {
-  await ensureAdminTables();
-  const now = Date.now();
-  const dayAgo = new Date(now - 24 * 60 * 60 * 1000);
-  const weekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
-  const weekRows = await db
-    .select()
-    .from(pageVisits)
-    .where(gte(pageVisits.createdAt, weekAgo))
-    .orderBy(desc(pageVisits.createdAt))
-    .limit(5000);
-  const counted = await db.select({ id: pageVisits.id }).from(pageVisits);
-  const pages = new Map<string, number>();
-  const sources = new Map<string, number>();
-  const ips = new Map<
-    string,
-    {
-      ip: string;
-      country: string | null;
-      hits: number;
-      sources: Map<string, number>;
-    }
-  >();
-  let day = 0;
-  let humans = 0;
-  for (const row of weekRows) {
-    if (row.createdAt >= dayAgo) day += 1;
-    if (!row.isBot) humans += 1;
-    pages.set(row.path, (pages.get(row.path) ?? 0) + 1);
-    const label = sourceLabel(row).source;
-    sources.set(label, (sources.get(label) ?? 0) + 1);
-    const seen = ips.get(row.ip) ?? {
-      ip: row.ip,
-      country: row.country,
-      hits: 0,
-      sources: new Map<string, number>(),
-    };
-    seen.hits += 1;
-    seen.sources.set(label, (seen.sources.get(label) ?? 0) + 1);
-    ips.set(row.ip, seen);
-  }
-  return {
-    all: counted.length,
-    day,
-    week: weekRows.length,
-    humans,
-    uniqueIpsWeek: ips.size,
-    topPages: [...pages.entries()]
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 12)
-      .map(([path, hits]) => ({ path, hits })),
-    topSources: [...sources.entries()]
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 12)
-      .map(([source, hits]) => ({ source, hits })),
-    topIps: [...ips.values()]
-      .sort((a, b) => b.hits - a.hits)
-      .slice(0, 12)
-      .map((row) => ({
+  try {
+    await ensureAdminTables();
+    const now = Date.now();
+    const dayAgo = new Date(now - 24 * 60 * 60 * 1000);
+    const weekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
+    const weekRows = await db
+      .select()
+      .from(pageVisits)
+      .where(gte(pageVisits.createdAt, weekAgo))
+      .orderBy(desc(pageVisits.createdAt))
+      .limit(5000);
+    const counted = await db.select({ id: pageVisits.id }).from(pageVisits);
+    const pages = new Map<string, number>();
+    const sources = new Map<string, number>();
+    const ips = new Map<
+      string,
+      {
+        ip: string;
+        country: string | null;
+        hits: number;
+        sources: Map<string, number>;
+      }
+    >();
+    let day = 0;
+    let humans = 0;
+    for (const row of weekRows) {
+      const created = row.createdAt instanceof Date ? row.createdAt : new Date(row.createdAt);
+      if (created >= dayAgo) day += 1;
+      if (!row.isBot) humans += 1;
+      pages.set(row.path, (pages.get(row.path) ?? 0) + 1);
+      const label = sourceLabel(row).source;
+      sources.set(label, (sources.get(label) ?? 0) + 1);
+      const seen = ips.get(row.ip) ?? {
         ip: row.ip,
         country: row.country,
-        hits: row.hits,
-        sources: [...row.sources.entries()]
-          .sort((a, b) => b[1] - a[1])
-          .map(([source, hits]) => `${source} ${hits}`)
-          .join(" · "),
-        primary:
-          [...row.sources.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ??
-          "Direct",
-      })),
-  };
+        hits: 0,
+        sources: new Map<string, number>(),
+      };
+      seen.hits += 1;
+      seen.sources.set(label, (seen.sources.get(label) ?? 0) + 1);
+      ips.set(row.ip, seen);
+    }
+    return {
+      all: counted.length,
+      day,
+      week: weekRows.length,
+      humans,
+      uniqueIpsWeek: ips.size,
+      topPages: [...pages.entries()]
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 12)
+        .map(([path, hits]) => ({ path, hits })),
+      topSources: [...sources.entries()]
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 12)
+        .map(([source, hits]) => ({ source, hits })),
+      topIps: [...ips.values()]
+        .sort((a, b) => b.hits - a.hits)
+        .slice(0, 12)
+        .map((row) => ({
+          ip: row.ip,
+          country: row.country,
+          hits: row.hits,
+          sources: [...row.sources.entries()]
+            .sort((a, b) => b[1] - a[1])
+            .map(([source, hits]) => `${source} ${hits}`)
+            .join(" · "),
+          primary:
+            [...row.sources.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ??
+            "Direct",
+        })),
+    };
+  } catch (error) {
+    console.warn("visitStats failed:", error);
+    return {
+      all: 0,
+      day: 0,
+      week: 0,
+      humans: 0,
+      uniqueIpsWeek: 0,
+      topPages: [],
+      topSources: [],
+      topIps: [],
+    };
+  }
 }

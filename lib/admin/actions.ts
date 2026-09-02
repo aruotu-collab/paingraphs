@@ -1,6 +1,7 @@
 "use server";
 
 import { count, desc, eq, lt } from "drizzle-orm";
+import type { SQLiteTable } from "drizzle-orm/sqlite-core";
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import {
@@ -15,12 +16,26 @@ import {
   watchlists,
 } from "@/lib/db/schema";
 import { getAdminSession } from "@/lib/session";
+import { ensureJourneyTables } from "@/lib/journeys/db";
 import { ensureAdminTables } from "./db";
+
+async function readyAdminDb() {
+  try {
+    await ensureJourneyTables();
+  } catch (error) {
+    console.warn("Journey tables:", error);
+  }
+  try {
+    await ensureAdminTables();
+  } catch (error) {
+    console.warn("Admin tables:", error);
+  }
+}
 
 export async function purgeOldVisits() {
   const admin = await getAdminSession();
   if (!admin) return { error: "Not allowed." };
-  await ensureAdminTables();
+  await readyAdminDb();
   const cutoff = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
   await db.delete(pageVisits).where(lt(pageVisits.createdAt, cutoff));
   revalidatePath("/admin/visits");
@@ -30,35 +45,49 @@ export async function purgeOldVisits() {
 export async function loadAdminOverview() {
   const admin = await getAdminSession();
   if (!admin) return null;
-  const [users] = await db.select({ n: count() }).from(user);
-  const [assess] = await db.select({ n: count() }).from(assessments);
-  const [watch] = await db.select({ n: count() }).from(watchlists);
-  const [hyps] = await db.select({ n: count() }).from(painHypotheses);
-  const [scans] = await db.select({ n: count() }).from(productScans);
-  const recentUsers = await db
-    .select({
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      createdAt: user.createdAt,
-      emailVerified: user.emailVerified,
-    })
-    .from(user)
-    .orderBy(desc(user.createdAt))
-    .limit(8);
+  await readyAdminDb();
+  const [users, assess, watch, hyps, scans, recentUsers] = await Promise.all([
+    countOrZero(user),
+    countOrZero(assessments),
+    countOrZero(watchlists),
+    countOrZero(painHypotheses),
+    countOrZero(productScans),
+    db
+      .select({
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        createdAt: user.createdAt,
+        emailVerified: user.emailVerified,
+      })
+      .from(user)
+      .orderBy(desc(user.createdAt))
+      .limit(8)
+      .catch(() => []),
+  ]);
   return {
-    users: Number(users?.n ?? 0),
-    assessments: Number(assess?.n ?? 0),
-    watchlists: Number(watch?.n ?? 0),
-    hypotheses: Number(hyps?.n ?? 0),
-    scans: Number(scans?.n ?? 0),
+    users,
+    assessments: assess,
+    watchlists: watch,
+    hypotheses: hyps,
+    scans,
     recentUsers,
   };
+}
+
+async function countOrZero(table: SQLiteTable) {
+  try {
+    const [row] = await db.select({ n: count() }).from(table);
+    return Number(row?.n ?? 0);
+  } catch {
+    return 0;
+  }
 }
 
 export async function loadAdminUsers() {
   const admin = await getAdminSession();
   if (!admin) return [];
+  await readyAdminDb();
   const people = await db
     .select({
       id: user.id,
@@ -68,7 +97,8 @@ export async function loadAdminUsers() {
       emailVerified: user.emailVerified,
     })
     .from(user)
-    .orderBy(desc(user.createdAt));
+    .orderBy(desc(user.createdAt))
+    .catch(() => []);
   const sessions = await db
     .select({
       userId: session.userId,
@@ -78,7 +108,8 @@ export async function loadAdminUsers() {
       expiresAt: session.expiresAt,
     })
     .from(session)
-    .orderBy(desc(session.updatedAt));
+    .orderBy(desc(session.updatedAt))
+    .catch(() => []);
   return people.map((person) => {
     const theirs = sessions.filter((row) => row.userId === person.id);
     const latest = theirs[0];
@@ -95,6 +126,8 @@ export async function loadAdminUsers() {
 export async function loadAdminDemand() {
   const admin = await getAdminSession();
   if (!admin) return null;
+  await readyAdminDb();
+  try {
   const quiz = await db
     .select({
       id: assessments.id,
@@ -139,4 +172,8 @@ export async function loadAdminDemand() {
     .orderBy(desc(productScans.createdAt))
     .limit(40);
   return { quiz, watching, answers, scans };
+  } catch (error) {
+    console.warn("Admin demand query failed:", error);
+    return { quiz: [], watching: [], answers: [], scans: [] };
+  }
 }

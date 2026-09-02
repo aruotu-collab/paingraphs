@@ -1,3 +1,4 @@
+import { formatStamp } from "@/lib/admin/format";
 import { loadAdminDemand } from "@/lib/admin/actions";
 import { requireAdmin } from "@/lib/session";
 
@@ -21,7 +22,7 @@ export default async function AdminDemandPage() {
         <List
           empty="None yet."
           rows={data.quiz.map((row) => [
-            row.createdAt.toISOString().slice(0, 16),
+            row.createdAt ? formatStamp(row.createdAt) : "—",
             row.title || row.painId,
             row.email || "signed-in / no extra email",
             row.consentMarketing ? "marketing on" : "",
@@ -34,7 +35,7 @@ export default async function AdminDemandPage() {
         <List
           empty="Nobody is watching a pain yet."
           rows={data.watching.map((row) => [
-            row.createdAt.toISOString().slice(0, 16),
+            row.createdAt ? formatStamp(row.createdAt) : "—",
             row.title || row.userId,
             row.email || row.userId,
             "",
@@ -47,7 +48,7 @@ export default async function AdminDemandPage() {
         <List
           empty="No test-page answers yet."
           rows={data.answers.map((row) => [
-            row.createdAt.toISOString().slice(0, 16),
+            row.createdAt ? formatStamp(row.createdAt) : "—",
             row.title || "hypothesis",
             row.email || "anonymous",
             row.hasProblem ? "has this problem" : "weak / no",
@@ -60,7 +61,7 @@ export default async function AdminDemandPage() {
         <List
           empty="No reverse scans."
           rows={data.scans.map((row) => [
-            row.createdAt.toISOString().slice(0, 16),
+            row.createdAt ? formatStamp(row.createdAt) : "—",
             row.name,
             row.url,
             row.userId || "guest",

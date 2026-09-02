@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { formatStamp } from "@/lib/admin/format";
 import { loadAdminOverview } from "@/lib/admin/actions";
 import { visitStats } from "@/lib/admin/visits";
 import { requireAdmin } from "@/lib/session";
@@ -7,11 +8,21 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminHomePage() {
   await requireAdmin("/admin");
-  const [overview, visits] = await Promise.all([
-    loadAdminOverview(),
-    visitStats(),
-  ]);
-  if (!overview) return null;
+  let overview = await loadAdminOverview().catch((error) => {
+    console.warn("Admin overview failed:", error);
+    return null;
+  });
+  const visits = await visitStats();
+  if (!overview) {
+    overview = {
+      users: 0,
+      assessments: 0,
+      watchlists: 0,
+      hypotheses: 0,
+      scans: 0,
+      recentUsers: [],
+    };
+  }
 
   return (
     <main className="pb-16">
@@ -108,7 +119,7 @@ export default async function AdminHomePage() {
           {overview.recentUsers.map((person) => (
             <li key={person.id} className="border border-line px-4 py-3">
               {person.email} · {person.emailVerified ? "verified" : "unverified"} ·{" "}
-              {person.createdAt.toISOString().slice(0, 10)}
+              {formatStamp(person.createdAt, "date")}
             </li>
           ))}
         </ul>
