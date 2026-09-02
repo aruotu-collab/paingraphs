@@ -64,130 +64,142 @@ export default async function PainDecisionPage({
           {page.cluster.name}
         </Link>
       </p>
-      <div className="mt-3 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-        <h1 className="font-display text-4xl md:text-5xl">{page.h1}</h1>
+      <h1 className="mt-3 font-display text-4xl md:text-5xl">{page.h1}</h1>
+      <p className="mt-5 max-w-2xl text-lg leading-8 text-muted">{page.problem}</p>
+
+      <div className="mt-5 flex flex-wrap items-center gap-x-6 gap-y-2 border border-line px-3 py-1.5">
         <WatchButton
           painId={page.id}
           watching={watching}
           signedIn={Boolean(session)}
           next={page.href}
+          flush
         />
+        <div className="flex min-w-0 flex-1 flex-wrap items-center justify-end gap-x-6 gap-y-1 text-xs uppercase tracking-[0.14em] text-muted">
+          {[
+            ["Pain", page.painScore],
+            ["Intent", page.intentScore],
+            ["Organic", page.organicScore],
+            ["Opportunity", page.opportunity],
+          ].map(([label, value]) => (
+            <span key={String(label)} className="whitespace-nowrap">
+              {label}{" "}
+              <span className="font-mono text-paper">{value}</span>
+            </span>
+          ))}
+        </div>
       </div>
-      <p className="mt-5 max-w-2xl text-lg leading-8 text-muted">{page.problem}</p>
-      <p className="mt-4 max-w-2xl text-sm leading-7 text-paper">
-        This page is a short report, not a “best overall” list. Read it from
-        top to bottom: first the complaints, then what those complaints
-        actually mean, then the kinds of product that exist, then a one-minute
-        set of sliders so the ranking at the end is about your situation.
-      </p>
 
-      <section className="mt-8 grid gap-px bg-line sm:grid-cols-2 lg:grid-cols-4">
-        {[
-          [
-            "Pain",
-            page.painScore,
-            "How severe this problem is, scored from real complaints. 100 is a daily, widely reported failure.",
-          ],
-          [
-            "Search intent",
-            page.intentScore,
-            "How clearly people are already looking for a product that fixes it, not just venting.",
-          ],
-          [
-            "Organic opportunity",
-            page.organicScore,
-            "How much room there is for a useful page to rank, because most current pages are thin lists.",
-          ],
-          [
-            "Opportunity",
-            page.opportunity,
-            "The overall chance this pain is worth a proper answer — a real product decision, not a passing moan.",
-          ],
-        ].map(([label, value, detail]) => (
-          <div key={String(label)} className="bg-ink px-5 py-6">
-            <div className="text-xs uppercase tracking-[0.16em] text-muted">
-              {label}
-            </div>
-            <div className="mt-2 font-mono text-2xl">{value}</div>
-            <p className="mt-3 text-xs leading-5 text-muted">{detail}</p>
+      {page.signals.length > 0 ? (
+        <section className="mt-8">
+          <h2 className="font-display text-2xl">
+            What people actually complain about
+          </h2>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
+            These are public comments, not marketing copy. Skim a few until you
+            recognise the same problem you have. If that is enough, skip ahead
+            to the analysis underneath.
+          </p>
+          <ComplaintQuotes quotes={page.signals} />
+        </section>
+      ) : null}
+
+      <section className="mt-10">
+        <h2 className="font-display text-2xl">PainGraphs analysis</h2>
+        <p className="mt-3 max-w-3xl whitespace-pre-line leading-7 text-muted">
+          {page.analysis}
+        </p>
+        <div className="mt-8 grid gap-6 md:grid-cols-2">
+          <div className="border border-line p-5">
+            <h3 className="text-xs uppercase tracking-[0.16em] text-muted">
+              Why now
+            </h3>
+            <p className="mt-3 text-sm leading-6 text-paper">{page.whyNow}</p>
           </div>
-        ))}
-      </section>
-
-      <section className="mt-12">
-        {page.signals.length > 0 ? (
-          <>
-            <h2 className="font-display text-2xl">
-              What people actually complain about
-            </h2>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
-              These are public comments, not marketing copy. Skim a few until
-              you recognise the same problem you have. If that is enough, skip
-              ahead to the analysis underneath.
-            </p>
-            <ComplaintQuotes quotes={page.signals} />
-          </>
-        ) : null}
-
-        <div className="mt-12 grid gap-10 md:grid-cols-[1.4fr_1fr]">
-          <div>
-            <h2 className="font-display text-2xl">PainGraphs analysis</h2>
-            <p className="mt-3 whitespace-pre-line leading-7 text-muted">
-              {page.analysis}
+          <div className="border border-line p-5">
+            <h3 className="text-xs uppercase tracking-[0.16em] text-muted">
+              Organic opportunity
+            </h3>
+            <p className="mt-3 text-sm leading-6 text-paper">
+              Enough people search this, and most pages still pick one winner.
+              A report that lets you set your own priorities is the useful
+              version of that page.
             </p>
           </div>
-          <aside className="space-y-6">
-            <div className="border border-line p-5">
-              <h3 className="text-xs uppercase tracking-[0.16em] text-muted">
-                Why now
-              </h3>
-              <p className="mt-3 text-sm leading-6 text-paper">{page.whyNow}</p>
-            </div>
-            <div className="border border-line p-5">
-              <h3 className="text-xs uppercase tracking-[0.16em] text-muted">
-                Organic opportunity
-              </h3>
-              <p className="mt-3 text-sm leading-6 text-paper">
-                Enough people search this, and most pages still pick one
-                winner. A report that lets you set your own priorities is the
-                useful version of that page.
-              </p>
-              <p className="mt-3 text-xs leading-5 text-muted">
-                Competition {page.competitionScore} is how crowded the search
-                results are. Product gap {page.productGap} is how poorly
-                current products answer the complaint. Affiliate{" "}
-                {page.affiliateScore} is whether honest product links are
-                available.
-              </p>
-            </div>
-            <div className="border border-line p-5">
-              <h3 className="text-xs uppercase tracking-[0.16em] text-muted">
-                Comparison criteria
-              </h3>
-              <p className="mt-3 text-xs leading-5 text-muted">
-                These are the five things we score. When you move the sliders
-                later, you are saying which of these matters most in your
-                ranking.
-              </p>
-              <ul className="mt-3 space-y-2 text-sm">
-                {page.criteria.map((item) => (
-                  <li key={item.slug}>
-                    <span className="text-paper">{item.name}</span>
-                    <span className="block text-muted">{item.detail}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </aside>
+        </div>
+        <div className="mt-6 border border-line p-5">
+          <h3 className="text-xs uppercase tracking-[0.16em] text-muted">
+            Comparison criteria
+          </h3>
+          <p className="mt-3 text-sm leading-6 text-muted">
+            These are the five things we score. When you move the sliders
+            later, you are saying which of these matters most in your ranking.
+          </p>
+          <ul className="mt-4 grid gap-4 sm:grid-cols-2">
+            {page.criteria.map((item) => (
+              <li key={item.slug}>
+                <span className="text-paper">{item.name}</span>
+                <span className="block text-sm text-muted">{item.detail}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div className="mt-6">
+          <h3 className="text-xs uppercase tracking-[0.16em] text-muted">
+            How this pain scores
+          </h3>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
+            These numbers sit behind the report. They are not the ranking of
+            products — that comes from the sliders at the bottom.
+          </p>
+          <section className="mt-4 grid gap-px bg-line sm:grid-cols-2 lg:grid-cols-4">
+            {[
+              [
+                "Pain",
+                page.painScore,
+                "How severe this problem is, scored from real complaints. 100 is a daily, widely reported failure.",
+              ],
+              [
+                "Search intent",
+                page.intentScore,
+                "How clearly people are already looking for a product that fixes it, not just venting.",
+              ],
+              [
+                "Organic opportunity",
+                page.organicScore,
+                "How much room there is for a useful page to rank, because most current pages are thin lists.",
+              ],
+              [
+                "Opportunity",
+                page.opportunity,
+                "The overall chance this pain is worth a proper answer — a real product decision, not a passing moan.",
+              ],
+            ].map(([label, value, detail]) => (
+              <div key={String(label)} className="bg-ink px-5 py-6">
+                <div className="text-xs uppercase tracking-[0.16em] text-muted">
+                  {label}
+                </div>
+                <div className="mt-2 font-mono text-2xl">{value}</div>
+                <p className="mt-3 text-xs leading-5 text-muted">{detail}</p>
+              </div>
+            ))}
+          </section>
+          <p className="mt-3 text-xs leading-5 text-muted">
+            Competition {page.competitionScore} is how crowded the search
+            results are. Product gap {page.productGap} is how poorly current
+            products answer the complaint. Affiliate {page.affiliateScore} is
+            whether honest product links are available.
+          </p>
         </div>
       </section>
 
       <section className="mt-12">
         <h2 className="font-display text-2xl">Who each option is best for</h2>
-        <p className="mt-3 max-w-2xl text-sm leading-6 text-muted">
-          These are types of product, not a single recommended model. None of
-          them wins every criterion. Read which person each one is for, then
-          use the sliders to say which person you are.
+        <p className="mt-3 max-w-2xl text-sm leading-7 text-muted">
+          This page is a short report, not a “best overall” list. These are
+          types of product, not a single recommended model. None of them wins
+          every criterion. After this, a one-minute set of sliders makes the
+          ranking about your situation.
         </p>
         <ul className="mt-5 space-y-4">
           {page.products.map((product) => (
