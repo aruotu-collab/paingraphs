@@ -153,8 +153,8 @@ export function PainQuiz({
             <input
               type="range"
               min={0}
-              max={10}
-              value={priorities[item.slug] ?? 0}
+              max={100}
+              value={Math.min(100, priorities[item.slug] ?? 0)}
               onChange={(event) => {
                 const value = Number(event.target.value);
                 const next = { ...priorities, [item.slug]: value };

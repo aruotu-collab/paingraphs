@@ -102,11 +102,6 @@ export default async function PainDecisionPage({
           <h2 className="font-display text-2xl">
             What people actually complain about
           </h2>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
-            These are public comments, not marketing copy. Skim a few until you
-            recognise the same problem you have. If that is enough, skip ahead
-            to the analysis underneath.
-          </p>
           <ComplaintQuotes quotes={page.signals} />
         </section>
       ) : null}
