@@ -86,281 +86,181 @@ export const verification = sqliteTable("verification", {
   ),
 });
 
-export const industries = sqliteTable("industries", {
+export const categories = sqliteTable("categories", {
   id: text("id").primaryKey(),
   slug: text("slug").notNull().unique(),
   name: text("name").notNull(),
-  createdAt: timestamp("created_at"),
+  summary: text("summary").notNull(),
 });
 
-export const niches = sqliteTable(
-  "niches",
+export const painClusters = sqliteTable(
+  "pain_clusters",
   {
     id: text("id").primaryKey(),
-    industryId: text("industry_id")
+    categoryId: text("category_id")
       .notNull()
-      .references(() => industries.id, { onDelete: "cascade" }),
+      .references(() => categories.id, { onDelete: "cascade" }),
     slug: text("slug").notNull(),
     name: text("name").notNull(),
-    createdAt: timestamp("created_at"),
+    summary: text("summary").notNull(),
   },
   (table) => [
-    uniqueIndex("niches_industry_slug_idx").on(table.industryId, table.slug),
+    uniqueIndex("pain_clusters_category_slug_idx").on(table.categoryId, table.slug),
   ],
 );
 
-export const countries = sqliteTable("countries", {
-  id: text("id").primaryKey(),
-  code: text("code").notNull().unique(),
-  name: text("name").notNull(),
-});
-
-export const personas = sqliteTable("personas", {
-  id: text("id").primaryKey(),
-  slug: text("slug").notNull().unique(),
-  name: text("name").notNull(),
-});
-
-export const sources = sqliteTable("sources", {
-  id: text("id").primaryKey(),
-  slug: text("slug").notNull().unique(),
-  name: text("name").notNull(),
-  kind: text("kind").notNull(),
-  baseUrl: text("base_url"),
-  enabled: integer("enabled", { mode: "boolean" }).$defaultFn(() => true).notNull(),
-});
-
-export const rawDocuments = sqliteTable(
-  "raw_documents",
+export const pains = sqliteTable(
+  "pains",
   {
     id: text("id").primaryKey(),
-    sourceId: text("source_id")
+    clusterId: text("cluster_id")
       .notNull()
-      .references(() => sources.id, { onDelete: "cascade" }),
-    externalId: text("external_id").notNull(),
-    url: text("url").notNull(),
-    title: text("title"),
-    body: text("body").notNull(),
-    author: text("author"),
-    publishedAt: integer("published_at", { mode: "timestamp_ms" }),
-    ingestedAt: timestamp("ingested_at"),
+      .references(() => painClusters.id, { onDelete: "cascade" }),
+    slug: text("slug").notNull(),
+    title: text("title").notNull(),
+    h1: text("h1").notNull(),
+    problem: text("problem").notNull(),
+    analysis: text("analysis").notNull(),
+    whyNow: text("why_now"),
+    strategy: text("strategy").notNull(),
+    stage: integer("stage").$defaultFn(() => 3).notNull(),
+    painScore: real("pain_score").notNull(),
+    intentScore: real("intent_score").notNull(),
+    competitionScore: real("competition_score").notNull(),
+    productGap: real("product_gap").notNull(),
+    affiliateScore: real("affiliate_score").notNull(),
+    organicScore: real("organic_score").notNull(),
+    opportunity: real("opportunity").notNull(),
+    trend: real("trend").notNull(),
+    sensitive: integer("sensitive", { mode: "boolean" })
+      .$defaultFn(() => false)
+      .notNull(),
+    status: text("status").$defaultFn(() => "published").notNull(),
+    updatedAt: timestamp("updated_at"),
   },
-  (table) => [
-    uniqueIndex("raw_documents_source_external_idx").on(
-      table.sourceId,
-      table.externalId,
-    ),
-  ],
+  (table) => [uniqueIndex("pains_cluster_slug_idx").on(table.clusterId, table.slug)],
 );
-
-export const problems = sqliteTable("problems", {
-  id: text("id").primaryKey(),
-  slug: text("slug").notNull().unique(),
-  title: text("title").notNull(),
-  summary: text("summary"),
-  createdAt: timestamp("created_at"),
-  updatedAt: timestamp("updated_at"),
-});
 
 export const painSignals = sqliteTable(
   "pain_signals",
   {
     id: text("id").primaryKey(),
-    problemId: text("problem_id").references(() => problems.id, {
-      onDelete: "set null",
-    }),
-    documentId: text("document_id")
+    painId: text("pain_id")
       .notNull()
-      .references(() => rawDocuments.id, { onDelete: "cascade" }),
-    quote: text("quote").notNull(),
-    personaGuess: text("persona_guess"),
-    workaround: text("workaround"),
-    intensity: real("intensity"),
-    purchaseIntent: real("purchase_intent"),
+      .references(() => pains.id, { onDelete: "cascade" }),
+    rawQuote: text("raw_quote").notNull(),
+    sourceKind: text("source_kind").notNull(),
+    sourceLabel: text("source_label").notNull(),
+    sourceUrl: text("source_url"),
+    publishedAt: integer("published_at", { mode: "timestamp_ms" }),
     createdAt: timestamp("created_at"),
   },
-  (table) => [
-    index("pain_signals_problem_idx").on(table.problemId),
-    index("pain_signals_document_idx").on(table.documentId),
-  ],
+  (table) => [index("pain_signals_pain_idx").on(table.painId)],
 );
 
-export const problemLinks = sqliteTable(
-  "problem_links",
+export const criteria = sqliteTable(
+  "criteria",
   {
     id: text("id").primaryKey(),
-    problemId: text("problem_id")
+    painId: text("pain_id")
       .notNull()
-      .references(() => problems.id, { onDelete: "cascade" }),
-    industryId: text("industry_id").references(() => industries.id, {
-      onDelete: "set null",
-    }),
-    nicheId: text("niche_id").references(() => niches.id, {
-      onDelete: "set null",
-    }),
-    personaId: text("persona_id").references(() => personas.id, {
-      onDelete: "set null",
-    }),
-    countryId: text("country_id").references(() => countries.id, {
-      onDelete: "set null",
-    }),
+      .references(() => pains.id, { onDelete: "cascade" }),
+    slug: text("slug").notNull(),
+    name: text("name").notNull(),
+    detail: text("detail").notNull(),
   },
-  (table) => [index("problem_links_problem_idx").on(table.problemId)],
+  (table) => [index("criteria_pain_idx").on(table.painId)],
 );
 
-export const problemScores = sqliteTable(
-  "problem_scores",
-  {
-    id: text("id").primaryKey(),
-    problemId: text("problem_id")
-      .notNull()
-      .references(() => problems.id, { onDelete: "cascade" }),
-    scoredAt: timestamp("scored_at"),
-    demand: real("demand").notNull(),
-    pain: real("pain").notNull(),
-    intent: real("intent").notNull(),
-    competition: real("competition").notNull(),
-    growth: real("growth").notNull(),
-    buildability: real("buildability").notNull(),
-    reachability: real("reachability"),
-    solutionGap: real("solution_gap"),
-    opportunity: real("opportunity").notNull(),
-    confidence: real("confidence"),
-    signalCount: integer("signal_count").$defaultFn(() => 0).notNull(),
-    rationale: text("rationale"),
-  },
-  (table) => [index("problem_scores_problem_idx").on(table.problemId)],
-);
-
-export const workarounds = sqliteTable("workarounds", {
-  id: text("id").primaryKey(),
-  problemId: text("problem_id")
-    .notNull()
-    .references(() => problems.id, { onDelete: "cascade" }),
-  name: text("name").notNull(),
-  description: text("description"),
-});
-
-export const providers = sqliteTable("providers", {
+export const products = sqliteTable("products", {
   id: text("id").primaryKey(),
   slug: text("slug").notNull().unique(),
   name: text("name").notNull(),
-  website: text("website"),
-  countryCode: text("country_code"),
-  createdAt: timestamp("created_at"),
+  summary: text("summary").notNull(),
+  whoFor: text("who_for").notNull(),
+  searchQuery: text("search_query").notNull(),
+  priceBand: text("price_band"),
 });
 
-export const solutions = sqliteTable("solutions", {
-  id: text("id").primaryKey(),
-  providerId: text("provider_id").references(() => providers.id, {
-    onDelete: "set null",
-  }),
-  slug: text("slug").notNull().unique(),
-  name: text("name").notNull(),
-  summary: text("summary"),
-  pricing: text("pricing"),
-  createdAt: timestamp("created_at"),
-});
-
-export const solutionProblems = sqliteTable(
-  "solution_problems",
-  {
-    id: text("id").primaryKey(),
-    solutionId: text("solution_id")
-      .notNull()
-      .references(() => solutions.id, { onDelete: "cascade" }),
-    problemId: text("problem_id")
-      .notNull()
-      .references(() => problems.id, { onDelete: "cascade" }),
-  },
-  (table) => [
-    uniqueIndex("solution_problems_unique_idx").on(
-      table.solutionId,
-      table.problemId,
-    ),
-  ],
-);
-
-export const productProfiles = sqliteTable(
-  "product_profiles",
-  {
-    id: text("id").primaryKey(),
-    userId: text("user_id")
-      .notNull()
-      .references(() => user.id, { onDelete: "cascade" }),
-    url: text("url").notNull(),
-    name: text("name"),
-    problemDna: text("problem_dna"),
-    createdAt: timestamp("created_at"),
-    updatedAt: timestamp("updated_at"),
-  },
-  (table) => [index("product_profiles_user_idx").on(table.userId)],
-);
-
-export const matches = sqliteTable(
-  "matches",
+export const productFits = sqliteTable(
+  "product_fits",
   {
     id: text("id").primaryKey(),
     productId: text("product_id")
       .notNull()
-      .references(() => productProfiles.id, { onDelete: "cascade" }),
-    signalId: text("signal_id").references(() => painSignals.id, {
-      onDelete: "set null",
-    }),
-    problemId: text("problem_id").references(() => problems.id, {
-      onDelete: "set null",
-    }),
-    fit: real("fit").notNull(),
-    intent: real("intent").notNull(),
-    recency: real("recency"),
-    why: text("why"),
-    createdAt: timestamp("created_at"),
+      .references(() => products.id, { onDelete: "cascade" }),
+    painId: text("pain_id")
+      .notNull()
+      .references(() => pains.id, { onDelete: "cascade" }),
+    scores: text("scores").notNull(),
+    note: text("note").notNull(),
   },
-  (table) => [index("matches_product_idx").on(table.productId)],
+  (table) => [uniqueIndex("product_fits_unique_idx").on(table.productId, table.painId)],
 );
 
-export const recommendedActions = sqliteTable("recommended_actions", {
-  id: text("id").primaryKey(),
-  matchId: text("match_id")
-    .notNull()
-    .references(() => matches.id, { onDelete: "cascade" }),
-  kind: text("kind").notNull(),
-  title: text("title").notNull(),
-  draft: text("draft"),
-  risk: text("risk"),
-  status: text("status").$defaultFn(() => "pending").notNull(),
-  createdAt: timestamp("created_at"),
-});
+export const assessments = sqliteTable(
+  "assessments",
+  {
+    id: text("id").primaryKey(),
+    painId: text("pain_id")
+      .notNull()
+      .references(() => pains.id, { onDelete: "cascade" }),
+    priorities: text("priorities").notNull(),
+    email: text("email"),
+    consentReport: integer("consent_report", { mode: "boolean" })
+      .$defaultFn(() => false)
+      .notNull(),
+    consentMarketing: integer("consent_marketing", { mode: "boolean" })
+      .$defaultFn(() => false)
+      .notNull(),
+    consentSensitive: integer("consent_sensitive", { mode: "boolean" })
+      .$defaultFn(() => false)
+      .notNull(),
+    createdAt: timestamp("created_at"),
+  },
+  (table) => [index("assessments_pain_idx").on(table.painId)],
+);
 
-export const savedMarkets = sqliteTable(
-  "saved_markets",
+export const watchlists = sqliteTable(
+  "watchlists",
   {
     id: text("id").primaryKey(),
     userId: text("user_id")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
-    query: text("query").notNull(),
+    painId: text("pain_id")
+      .notNull()
+      .references(() => pains.id, { onDelete: "cascade" }),
     createdAt: timestamp("created_at"),
   },
-  (table) => [index("saved_markets_user_idx").on(table.userId)],
+  (table) => [
+    uniqueIndex("watchlists_user_pain_idx").on(table.userId, table.painId),
+  ],
 );
 
 export const userRelations = relations(user, ({ many }) => ({
   sessions: many(session),
-  savedMarkets: many(savedMarkets),
-  productProfiles: many(productProfiles),
+  watchlists: many(watchlists),
 }));
 
-export const problemRelations = relations(problems, ({ many }) => ({
-  signals: many(painSignals),
-  scores: many(problemScores),
-  links: many(problemLinks),
-  workarounds: many(workarounds),
+export const categoryRelations = relations(categories, ({ many }) => ({
+  clusters: many(painClusters),
 }));
 
-export const savedMarketRelations = relations(savedMarkets, ({ one }) => ({
-  user: one(user, {
-    fields: [savedMarkets.userId],
-    references: [user.id],
+export const clusterRelations = relations(painClusters, ({ one, many }) => ({
+  category: one(categories, {
+    fields: [painClusters.categoryId],
+    references: [categories.id],
   }),
+  pains: many(pains),
+}));
+
+export const painRelations = relations(pains, ({ one, many }) => ({
+  cluster: one(painClusters, {
+    fields: [pains.clusterId],
+    references: [painClusters.id],
+  }),
+  signals: many(painSignals),
+  criteria: many(criteria),
+  fits: many(productFits),
 }));

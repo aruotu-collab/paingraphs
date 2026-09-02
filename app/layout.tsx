@@ -25,11 +25,11 @@ const instrument = Instrument_Serif({
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "PainGraphs — see where demand already exists",
+    default: "PainGraphs — a live market of consumer pain",
     template: "%s · PainGraphs",
   },
   description:
-    "Demand intelligence for software builders. Find painful problems people are already asking to have solved, then find the people asking for what you built.",
+    "Pain-first decision tools and a daily marketplace of structured consumer pains for affiliates and founders.",
   alternates: {
     canonical: "/",
   },
@@ -38,9 +38,9 @@ export const metadata: Metadata = {
     locale: "en_GB",
     url: SITE_URL,
     siteName: "PainGraphs",
-    title: "PainGraphs — see where demand already exists",
+    title: "PainGraphs — a live market of consumer pain",
     description:
-      "Demand intelligence for software builders. Find painful problems people are already asking to have solved, then find the people asking for what you built.",
+      "Pain-first decision tools and a daily marketplace of structured consumer pains for affiliates and founders.",
   },
   robots: {
     index: true,
@@ -57,7 +57,11 @@ export const metadata: Metadata = {
 
 const gaId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html
       lang="en"

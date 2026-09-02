@@ -1,4 +1,7 @@
 import { defineConfig } from "drizzle-kit";
+import { loadLocalEnv } from "./lib/ingest/load-env";
+
+loadLocalEnv();
 
 const url =
   process.env.TURSO_DATABASE_URL ??

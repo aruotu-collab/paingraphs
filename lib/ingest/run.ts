@@ -1,176 +1,164 @@
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
+import { PAINS } from "@/lib/catalog/data";
+import { ensureCatalog } from "@/lib/catalog/sync";
 import { db } from "@/lib/db";
-import {
-  matches,
-  painSignals,
-  problemLinks,
-  problems,
-  problemScores,
-  rawDocuments,
-  recommendedActions,
-  solutionProblems,
-  sources,
-  workarounds,
-} from "@/lib/db/schema";
-import { assignProblem, ensureTaxonomy, rescoreProblems } from "./cluster";
-import { extractSignal } from "./extract";
-import { fetchGitHub } from "./sources/github";
-import { fetchHackerNews } from "./sources/hn";
-import { fetchReddit } from "./sources/reddit";
-import { fetchStackExchange } from "./sources/stackexchange";
-import type { FetchedDoc, IngestMode, IngestStats } from "./types";
+import { painSignals, pains } from "@/lib/db/schema";
+import { ingestCustomSearch } from "./custom-search";
+import { ingestKeywordPlanner } from "./keyword-planner";
+import { ingestClickbankDiscover } from "./clickbank-discover";
+import { ingestOpenAIDiscover } from "./openai-discover";
+import { ingestRedditDiscover } from "./reddit-discover";
+import { ingestOpenAISearch } from "./openai-search";
+import { ingestSearchConsole } from "./search-console";
+import { ingestVertexSearch } from "./vertex-search";
+import { getJson, hash, storeSignal } from "./signals";
 
-export async function resetGraph() {
-  await db.delete(recommendedActions);
-  await db.delete(matches);
-  await db.delete(solutionProblems);
-  await db.delete(painSignals);
-  await db.delete(problemScores);
-  await db.delete(problemLinks);
-  await db.delete(workarounds);
-  await db.delete(problems);
-  await db.delete(rawDocuments);
-}
+const PAIN_SHAPE =
+  /i love this but|the only problem|does anyone else|this hurts|i wish they|why don't they|it would be perfect if|doesn't|don't|too loud|rustle|sting|rub|scare|pressure|clamp/i;
 
-export async function runIngest(
-  mode: IngestMode = "full",
-  options: { reset?: boolean } = {},
-): Promise<IngestStats> {
-  if (options.reset) await resetGraph();
-  await ensureTaxonomy();
-  const sourceRows = await db.select().from(sources);
-  const sourceBySlug = Object.fromEntries(sourceRows.map((row) => [row.slug, row]));
+export async function runIngest() {
+  await ensureCatalog();
+  const youtube = await ingestYoutube();
+  const searchConsole = await ingestSearchConsole();
+  const vertexSearch = await ingestVertexSearch();
+  const clickbankDiscover = await ingestClickbankDiscover();
+  const redditDiscover = await ingestRedditDiscover();
+  const openaiDiscover = await ingestOpenAIDiscover();
+  const openaiSearch = await ingestOpenAISearch();
+  const customSearch = await ingestCustomSearch();
+  const keywordPlanner = await ingestKeywordPlanner();
+  await refreshTrends();
 
-  const skipped: string[] = [];
-  const fetched: FetchedDoc[] = [];
-  const used: string[] = [];
-
-  try {
-    const hn = await fetchHackerNews(mode);
-    fetched.push(...hn);
-    used.push("hn");
-  } catch (error) {
-    skipped.push("hn");
-    console.warn("Hacker News ingest failed:", error);
+  const sources = ["catalog"];
+  if (youtube > 0) sources.push("youtube");
+  if (searchConsole > 0) sources.push("search-console");
+  if (vertexSearch.stored + vertexSearch.engineResults > 0) {
+    sources.push("vertex-search");
   }
-
-  try {
-    const se = await fetchStackExchange(mode);
-    fetched.push(...se);
-    used.push("stackexchange");
-  } catch (error) {
-    skipped.push("stackexchange");
-    console.warn("Stack Exchange ingest failed:", error);
+  if (clickbankDiscover.pains + clickbankDiscover.quotes > 0) {
+    sources.push("clickbank-discover");
   }
-
-  try {
-    const gh = await fetchGitHub(mode);
-    if (gh.length === 0) skipped.push("github");
-    else used.push("github");
-    fetched.push(...gh);
-  } catch (error) {
-    skipped.push("github");
-    console.warn("GitHub ingest failed:", error);
+  if (redditDiscover.pains + redditDiscover.quotes > 0) {
+    sources.push("reddit-discover");
   }
-
-  try {
-    const reddit = await fetchReddit(mode);
-    if (reddit.length === 0) skipped.push("reddit");
-    else used.push("reddit");
-    fetched.push(...reddit);
-  } catch (error) {
-    skipped.push("reddit");
-    console.warn("Reddit ingest failed:", error);
-  }
-
-  let newDocuments = 0;
-  let newSignals = 0;
-
-  for (const doc of fetched) {
-    const source = sourceBySlug[doc.sourceSlug];
-    if (!source) continue;
-
-    await db
-      .insert(rawDocuments)
-      .values({
-        id: crypto.randomUUID(),
-        sourceId: source.id,
-        externalId: doc.externalId,
-        url: doc.url,
-        title: doc.title,
-        body: doc.body,
-        author: doc.author,
-        publishedAt: doc.publishedAt,
-      })
-      .onConflictDoNothing({
-        target: [rawDocuments.sourceId, rawDocuments.externalId],
-      });
-
-    const [stored] = await db
-      .select()
-      .from(rawDocuments)
-      .where(
-        and(
-          eq(rawDocuments.sourceId, source.id),
-          eq(rawDocuments.externalId, doc.externalId),
-        ),
-      )
-      .limit(1);
-    if (!stored) continue;
-
-    const [already] = await db
-      .select({ id: painSignals.id })
-      .from(painSignals)
-      .where(eq(painSignals.documentId, stored.id))
-      .limit(1);
-    if (already) continue;
-
-    newDocuments += 1;
-    const extracted = await extractSignal(doc);
-    if (!extracted) {
-      await db.insert(painSignals).values({
-        id: crypto.randomUUID(),
-        problemId: null,
-        documentId: stored.id,
-        quote: "[not-a-pain]",
-        intensity: 0,
-        purchaseIntent: 0,
-      });
-      continue;
-    }
-
-    const problemId = await assignProblem(extracted);
-    await db.insert(painSignals).values({
-      id: crypto.randomUUID(),
-      problemId,
-      documentId: stored.id,
-      quote: extracted.quote,
-      personaGuess: extracted.personaGuess,
-      workaround: extracted.workaround,
-      intensity: extracted.intensity,
-      purchaseIntent: extracted.purchaseIntent,
-    });
-    newSignals += 1;
-  }
-
-  await rescoreProblems();
-
-  const problemCount = new Set(
-    (
-      await db
-        .select({ problemId: painSignals.problemId })
-        .from(painSignals)
-    )
-      .map((row) => row.problemId)
-      .filter(Boolean),
-  ).size;
+  if (openaiDiscover.pains + openaiDiscover.quotes > 0) sources.push("openai-discover");
+  if (openaiSearch > 0) sources.push("openai");
+  if (customSearch.stored + customSearch.competitionHints > 0) sources.push("custom-search");
+  if (keywordPlanner > 0) sources.push("keyword-planner");
 
   return {
-    documents: fetched.length,
-    newDocuments,
-    signals: newSignals,
-    problems: problemCount,
-    sources: used,
-    skipped,
+    catalog: PAINS.length,
+    discoveredPains: openaiDiscover.pains + clickbankDiscover.pains + redditDiscover.pains,
+    discoveredQuotes: openaiDiscover.quotes + clickbankDiscover.quotes + redditDiscover.quotes,
+    youtubeComments: youtube,
+    searchConsoleQueries: searchConsole,
+    vertexSearchResults: vertexSearch.stored + vertexSearch.engineResults,
+    openaiSearchResults: openaiSearch,
+    customSearchResults: customSearch.stored,
+    customSearchCompetitionHints: customSearch.competitionHints,
+    keywordPlannerIdeas: keywordPlanner,
+    sources,
   };
+}
+
+async function ingestYoutube() {
+  const key = process.env.YOUTUBE_API_KEY;
+  if (!key) return 0;
+  let stored = 0;
+  for (const pain of PAINS) {
+    for (const query of pain.youtubeQueries.slice(0, 1)) {
+      const videos = await searchVideos(key, query);
+      for (const videoId of videos.slice(0, 2)) {
+        const comments = await videoComments(key, videoId);
+        for (const comment of comments) {
+          if (!PAIN_SHAPE.test(comment.text)) continue;
+          const added = await storeSignal({
+            id: `yt-${pain.id}-${hash(comment.id)}`,
+            painId: pain.id,
+            rawQuote: comment.text,
+            sourceKind: "youtube",
+            sourceLabel: "YouTube comment",
+            sourceUrl: `https://www.youtube.com/watch?v=${videoId}`,
+            publishedAt: comment.publishedAt,
+          });
+          if (added) stored += 1;
+        }
+      }
+    }
+  }
+  return stored;
+}
+
+async function searchVideos(key: string, query: string) {
+  const url = new URL("https://www.googleapis.com/youtube/v3/search");
+  url.searchParams.set("part", "snippet");
+  url.searchParams.set("type", "video");
+  url.searchParams.set("maxResults", "3");
+  url.searchParams.set("q", query);
+  url.searchParams.set("key", key);
+  const data = await getJson<{ items?: { id?: { videoId?: string } }[] }>(url);
+  return (data.items ?? [])
+    .map((item) => item.id?.videoId)
+    .filter((id): id is string => Boolean(id));
+}
+
+async function videoComments(key: string, videoId: string) {
+  const url = new URL("https://www.googleapis.com/youtube/v3/commentThreads");
+  url.searchParams.set("part", "snippet");
+  url.searchParams.set("videoId", videoId);
+  url.searchParams.set("maxResults", "20");
+  url.searchParams.set("textFormat", "plainText");
+  url.searchParams.set("key", key);
+  const data = await getJson<{
+    items?: {
+      id?: string;
+      snippet?: {
+        topLevelComment?: {
+          snippet?: { textDisplay?: string; publishedAt?: string };
+        };
+      };
+    }[];
+  }>(url);
+  return (data.items ?? [])
+    .map((item) => ({
+      id: item.id ?? crypto.randomUUID(),
+      text: item.snippet?.topLevelComment?.snippet?.textDisplay ?? "",
+      publishedAt: item.snippet?.topLevelComment?.snippet?.publishedAt
+        ? new Date(item.snippet.topLevelComment.snippet.publishedAt)
+        : null,
+    }))
+    .filter((row) => row.text.length > 24);
+}
+
+async function refreshTrends() {
+  const rows = await db.select().from(pains);
+  for (const pain of rows) {
+    const seed = PAINS.find((item) => item.id === pain.id);
+    const signals = await db
+      .select()
+      .from(painSignals)
+      .where(eq(painSignals.painId, pain.id));
+    const youtube = signals.filter((row) => row.sourceKind === "youtube").length;
+    const gsc = signals.filter((row) => row.sourceKind === "gsc").length;
+    const cse = signals.filter((row) => row.sourceKind === "cse").length;
+    const vertex = signals.filter((row) => row.sourceKind === "vertex").length;
+    const openai = signals.filter((row) => row.sourceKind === "openai").length;
+    const ads = signals.filter((row) => row.sourceKind === "ads").length;
+    const live = Math.min(24, youtube * 2 + gsc + cse + vertex + openai + ads * 2);
+    const baseline = seed?.trend ?? pain.trend;
+    await db
+      .update(pains)
+      .set({
+        trend: Math.max(-20, Math.min(80, baseline + live)),
+        organicScore: Math.min(99, (seed?.organicScore ?? pain.organicScore) + Math.min(6, gsc)),
+        intentScore: Math.min(99, (seed?.intentScore ?? pain.intentScore) + Math.min(5, ads + gsc)),
+        opportunity: Math.min(
+          99,
+          (seed?.opportunity ?? pain.opportunity) +
+            Math.min(6, youtube + gsc + vertex + openai + ads),
+        ),
+        updatedAt: new Date(),
+      })
+      .where(eq(pains.id, pain.id));
+  }
 }

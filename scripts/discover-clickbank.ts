@@ -3,8 +3,8 @@ import { loadLocalEnv } from "../lib/ingest/load-env";
 loadLocalEnv();
 
 async function main() {
-  const { runIngest } = await import("../lib/ingest/run");
-  const stats = await runIngest();
+  const { ingestClickbankDiscover } = await import("../lib/ingest/clickbank-discover");
+  const stats = await ingestClickbankDiscover();
   console.log(JSON.stringify(stats, null, 2));
 }
 
