@@ -6,10 +6,17 @@ export function PainGraphReport({
   page,
   shares,
   ranked,
+  affiliateOffer,
 }: {
   page: PainPage;
   shares: Priorities;
   ranked: PainPage["products"];
+  affiliateOffer?: {
+    name: string;
+    hopLink: string;
+    reasons: string[];
+    productFit: number;
+  } | null;
 }) {
   const reading = readWeights(page.criteria, shares);
   const winner = ranked[0];
@@ -90,6 +97,39 @@ export function PainGraphReport({
         </div>
       ) : null}
 
+      {affiliateOffer && winner && winner.match >= 55 && affiliateOffer.productFit >= 55 ? (
+        <div className="mt-6 border border-copper/40 p-5">
+          <p className="text-xs uppercase tracking-[0.16em] text-copper">
+            Recommended solution
+          </p>
+          <p className="mt-2 font-display text-2xl">{affiliateOffer.name}</p>
+          <p className="mt-2 text-sm leading-6 text-muted">
+            Strong match for the training priorities you selected.
+          </p>
+          <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-muted">
+            {affiliateOffer.reasons.map((reason) => (
+              <li key={reason}>{reason}</li>
+            ))}
+          </ul>
+          <a
+            href={affiliateOffer.hopLink}
+            target="_blank"
+            rel="noreferrer sponsored"
+            className="mt-4 inline-block bg-copper px-5 py-2.5 text-ink hover:bg-copper-2"
+          >
+            View program
+          </a>
+        </div>
+      ) : affiliateOffer ? (
+        <div className="mt-6 border border-line p-5">
+          <p className="text-sm leading-6 text-muted">
+            We could not find a sufficiently strong match to recommend that
+            offer against the mix you set. Watch this pain if you want to be
+            told when a better solution appears.
+          </p>
+        </div>
+      ) : null}
+
       <p className="mt-6 text-sm leading-6 text-muted">
         Below is every option on this page, in order. The percentage is how
         well it scored on the mix you set — 100% would mean it was strong on
@@ -158,15 +198,23 @@ export function PainGraphReport({
                   </div>
                 ))}
               </div>
-              <a
-                href={productHref(product.searchQuery)}
-                target="_blank"
-                rel="noreferrer sponsored"
-                className="mt-4 inline-block text-sm text-paper hover:text-copper-2"
-              >
-                {productCtaLabel(product.searchQuery)}
-                {product.priceBand ? ` · ${product.priceBand}` : ""}
-              </a>
+              {product.match >= 55 ? (
+                <a
+                  href={productHref(product.searchQuery)}
+                  target="_blank"
+                  rel="noreferrer sponsored"
+                  className="mt-4 inline-block text-sm text-paper hover:text-copper-2"
+                >
+                  {productCtaLabel(product.searchQuery)}
+                  {product.priceBand ? ` · ${product.priceBand}` : ""}
+                </a>
+              ) : (
+                <p className="mt-4 text-sm leading-6 text-muted">
+                  This option does not fit the mix you set well enough to
+                  recommend. Watch the pain if you want to be told when a
+                  stronger match appears.
+                </p>
+              )}
             </li>
           );
         })}

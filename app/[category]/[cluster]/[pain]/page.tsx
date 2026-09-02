@@ -3,6 +3,10 @@ import { notFound } from "next/navigation";
 import { ComplaintQuotes } from "@/components/complaint-quotes";
 import { PainQuiz } from "@/components/pain-quiz";
 import { WatchButton } from "@/components/watch-button";
+import { ResearchProgrammesButton } from "@/components/opportunity-finder";
+import { isAdminEmail } from "@/lib/admin";
+import { findOffersForPain } from "@/lib/lab/actions";
+import { opportunityLens } from "@/lib/lab/scores";
 import { listWatchIds } from "@/lib/market/actions";
 import { getPainPage } from "@/lib/market/queries";
 import { parseQuizWeights } from "@/lib/market/quiz-state";
@@ -42,6 +46,7 @@ export default async function PainDecisionPage({
   const page = await getPainPage(category, cluster, pain);
   if (!page) notFound();
   const session = await getSession();
+  const admin = isAdminEmail(session?.user.email);
   const watching = (await listWatchIds()).includes(page.id);
   const query = await searchParams;
   const reveal = Boolean(session) && query.graph === "1";
@@ -49,6 +54,8 @@ export default async function PainDecisionPage({
     query.w,
     page.criteria.map((item) => item.slug),
   );
+  const lens = opportunityLens(page);
+  const sellable = admin ? await findOffersForPain(page.id) : [];
 
   return (
     <main className="mx-auto w-full max-w-5xl flex-1 px-5 py-10">
@@ -109,7 +116,98 @@ export default async function PainDecisionPage({
         <p className="mt-3 max-w-3xl whitespace-pre-line leading-7 text-muted">
           {page.analysis}
         </p>
-        <div className="mt-8 grid gap-6 md:grid-cols-2">
+      </section>
+
+      <PainQuiz
+        page={page}
+        signedIn={Boolean(session)}
+        reveal={reveal}
+        initialPriorities={initialPriorities}
+        affiliateOffer={
+          sellable[0]
+            ? {
+                name: sellable[0].offer.name,
+                hopLink: sellable[0].offer.hopLink,
+                reasons: [
+                  `Fit ${sellable[0].match.productFit} against this pain.`,
+                  sellable[0].match.evidenceNote ||
+                    "Scored from marketplace evidence, not an invented claim.",
+                  "The link is the HopLink you imported.",
+                ],
+                productFit: sellable[0].match.productFit,
+              }
+            : null
+        }
+      />
+
+      <section className="mt-10 border border-line p-5">
+        <h2 className="font-display text-2xl">How this demand monetizes</h2>
+        <dl className="mt-4 grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
+          <div>
+            <dt className="text-xs uppercase tracking-[0.14em] text-muted">
+              Demand
+            </dt>
+            <dd className="mt-1 font-mono">{lens.demand}</dd>
+          </div>
+          <div>
+            <dt className="text-xs uppercase tracking-[0.14em] text-muted">
+              Pain-to-money
+            </dt>
+            <dd className="mt-1 font-mono">{lens.money}</dd>
+          </div>
+          <div>
+            <dt className="text-xs uppercase tracking-[0.14em] text-muted">
+              Underserved
+            </dt>
+            <dd className="mt-1 font-mono">{lens.underserved}</dd>
+          </div>
+          <div>
+            <dt className="text-xs uppercase tracking-[0.14em] text-muted">
+              Route
+            </dt>
+            <dd className="mt-1 font-mono">{lens.route}</dd>
+          </div>
+        </dl>
+        {lens.route === "founder" ? (
+          <p className="mt-4 text-sm leading-6 text-muted">
+            Strong demand, weak product coverage. The honest move is a waitlist,
+            not a forced affiliate push. Complete the PainGraph above, then track
+            this pain.
+          </p>
+        ) : null}
+        {sellable.length > 0 ? (
+          <div className="mt-6">
+            <p className="text-xs uppercase tracking-[0.16em] text-copper">
+              Your matched offers
+            </p>
+            <ul className="mt-3 space-y-2 text-sm">
+              {sellable.map(({ match, offer }) => (
+                <li key={match.id}>
+                  {offer.name} · fit {match.productFit} · money {match.moneyScore}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : admin ? (
+          <p className="mt-4 text-sm text-muted">
+            No saved offer against this pain yet. Import one in the{" "}
+            <Link href="/workspace/lab" className="text-copper hover:text-copper-2">
+              affiliate lab
+            </Link>
+            .
+          </p>
+        ) : null}
+        {admin ? (
+          <ResearchProgrammesButton
+            title={page.title}
+            problem={page.problem}
+            painId={page.id}
+          />
+        ) : null}
+      </section>
+
+      <section className="mt-10">
+        <div className="grid gap-6 md:grid-cols-2">
           <div className="border border-line p-5">
             <h3 className="text-xs uppercase tracking-[0.16em] text-muted">
               Why now
@@ -132,8 +230,8 @@ export default async function PainDecisionPage({
             Comparison criteria
           </h3>
           <p className="mt-3 text-sm leading-6 text-muted">
-            These are the five things we score. When you move the sliders
-            later, you are saying which of these matters most in your ranking.
+            These are the five things we score. The sliders above are how you
+            say which of these matters most in your ranking.
           </p>
           <ul className="mt-4 grid gap-4 sm:grid-cols-2">
             {page.criteria.map((item) => (
@@ -150,7 +248,7 @@ export default async function PainDecisionPage({
           </h3>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
             These numbers sit behind the report. They are not the ranking of
-            products — that comes from the sliders at the bottom.
+            products — that comes from the sliders above.
           </p>
           <section className="mt-4 grid gap-px bg-line sm:grid-cols-2 lg:grid-cols-4">
             {[
@@ -198,8 +296,8 @@ export default async function PainDecisionPage({
         <p className="mt-3 max-w-2xl text-sm leading-7 text-muted">
           This page is a short report, not a “best overall” list. These are
           types of product, not a single recommended model. None of them wins
-          every criterion. After this, a one-minute set of sliders makes the
-          ranking about your situation.
+          every criterion. The ranking above is for the mix you set, not for a
+          reviewer who does not have this pain.
         </p>
         <ul className="mt-5 space-y-4">
           {page.products.map((product) => (
@@ -211,13 +309,6 @@ export default async function PainDecisionPage({
           ))}
         </ul>
       </section>
-
-      <PainQuiz
-        page={page}
-        signedIn={Boolean(session)}
-        reveal={reveal}
-        initialPriorities={initialPriorities}
-      />
 
       {page.related.length > 0 ? (
         <section className="mt-12">

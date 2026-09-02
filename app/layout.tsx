@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Instrument_Serif } from "next/font/google";
 import { GoogleAnalytics } from "@next/third-parties/google";
+import { Suspense } from "react";
+import { Footer } from "@/components/footer";
 import { Header } from "@/components/header";
 import { PhaseBanner } from "@/components/phase-banner";
+import { VisitTracker } from "@/components/visit-tracker";
 import { SITE_URL } from "@/lib/site";
 import "./globals.css";
 
@@ -70,7 +73,11 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col bg-ink text-paper">
         <PhaseBanner />
         <Header />
+        <Suspense fallback={null}>
+          <VisitTracker />
+        </Suspense>
         {children}
+        <Footer />
       </body>
       {gaId ? <GoogleAnalytics gaId={gaId} /> : null}
     </html>

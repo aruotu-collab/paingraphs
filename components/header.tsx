@@ -2,12 +2,10 @@ import Link from "next/link";
 import { AuthStatus } from "@/components/auth-status";
 
 const links = [
-  { href: "/", label: "Market" },
-  { href: "/electronics", label: "Electronics" },
-  { href: "/personal-care", label: "Personal care" },
-  { href: "/home", label: "Home" },
-  { href: "/clothes", label: "Clothes" },
-  { href: "/watchlist", label: "Watchlist" },
+  { href: "/", label: "Explore Pains" },
+  { href: "/for-affiliates", label: "I Want to Earn" },
+  { href: "/for-founders", label: "I Want to Build" },
+  { href: "/how-it-works", label: "How It Works" },
 ];
 
 export function Header() {

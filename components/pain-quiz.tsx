@@ -17,11 +17,18 @@ export function PainQuiz({
   signedIn,
   reveal = false,
   initialPriorities,
+  affiliateOffer,
 }: {
   page: PainPage;
   signedIn: boolean;
   reveal?: boolean;
   initialPriorities?: Record<string, number> | null;
+  affiliateOffer?: {
+    name: string;
+    hopLink: string;
+    reasons: string[];
+    productFit: number;
+  } | null;
 }) {
   const slugs = page.criteria.map((item) => item.slug);
   const [priorities, setPriorities] = useState<Record<string, number>>(() => {
@@ -121,11 +128,11 @@ export function PainQuiz({
   }
 
   return (
-    <section id="find-match" className="mt-12 border border-line bg-ink-2 p-6">
+    <section id="find-match" className="mt-8 border border-line bg-ink-2 p-6">
       <h2 className="font-display text-3xl">Find the best match for you</h2>
       <p className="mt-3 max-w-2xl text-sm leading-7 text-muted">
-        About 30–60 seconds. Each slider is one of the five things we compared
-        above. Slide a factor to the right if it is a reason you would reject a
+        About 30–60 seconds. Each slider is one of the five things we score.
+        Slide a factor to the right if it is a reason you would reject a
         product. Slide it left if you can live without it. The percentages
         always add up to 100%, so raising one automatically lowers the others.
       </p>
@@ -248,7 +255,12 @@ export function PainQuiz({
       ) : null}
 
       {signedIn && done ? (
-        <PainGraphReport page={page} shares={shares} ranked={ranked} />
+        <PainGraphReport
+          page={page}
+          shares={shares}
+          ranked={ranked}
+          affiliateOffer={affiliateOffer}
+        />
       ) : null}
     </section>
   );

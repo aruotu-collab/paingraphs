@@ -15,6 +15,12 @@ export default function PrivacyPage() {
           them later, run inside PainGraphs to people who opted in.
         </p>
         <p>
+          The site operator may log page paths, IP address, approximate
+          location when the host provides it, browser user agent, and referrer
+          so they can see traffic and protect the service. Sign-in tokens are
+          not stored in that log. We do not sell this data.
+        </p>
+        <p>
           Composite quotes on pages are aggregated research language, not a
           claim that a named person posted that sentence. Live YouTube comments
           are stored only when pulled through the official API and still sound

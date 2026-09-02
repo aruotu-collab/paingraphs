@@ -238,9 +238,224 @@ export const watchlists = sqliteTable(
   ],
 );
 
+export const productScans = sqliteTable(
+  "product_scans",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id").references(() => user.id, { onDelete: "cascade" }),
+    url: text("url").notNull(),
+    name: text("name").notNull(),
+    dna: text("dna").notNull(),
+    createdAt: timestamp("created_at"),
+  },
+  (table) => [index("product_scans_user_idx").on(table.userId)],
+);
+
+export const painHypotheses = sqliteTable(
+  "pain_hypotheses",
+  {
+    id: text("id").primaryKey(),
+    scanId: text("scan_id").references(() => productScans.id, {
+      onDelete: "cascade",
+    }),
+    userId: text("user_id").references(() => user.id, { onDelete: "cascade" }),
+    catalogPainId: text("catalog_pain_id").references(() => pains.id, {
+      onDelete: "set null",
+    }),
+    slug: text("slug").notNull().unique(),
+    title: text("title").notNull(),
+    h1: text("h1").notNull(),
+    problem: text("problem").notNull(),
+    audience: text("audience").notNull(),
+    analysis: text("analysis").notNull(),
+    unmetNeed: text("unmet_need").notNull(),
+    questions: text("questions").notNull(),
+    campaignPack: text("campaign_pack").notNull(),
+    status: text("status").$defaultFn(() => "hypothesis").notNull(),
+    origin: text("origin").$defaultFn(() => "inside-out").notNull(),
+    matchScore: integer("match_score").$defaultFn(() => 0).notNull(),
+    isPublic: integer("is_public", { mode: "boolean" })
+      .$defaultFn(() => false)
+      .notNull(),
+    createdAt: timestamp("created_at"),
+  },
+  (table) => [
+    index("pain_hypotheses_user_idx").on(table.userId),
+    index("pain_hypotheses_status_idx").on(table.status),
+  ],
+);
+
+export const hypothesisMetrics = sqliteTable(
+  "hypothesis_metrics",
+  {
+    id: text("id").primaryKey(),
+    hypothesisId: text("hypothesis_id")
+      .notNull()
+      .references(() => painHypotheses.id, { onDelete: "cascade" }),
+    impressions: integer("impressions").$defaultFn(() => 0).notNull(),
+    clicks: integer("clicks").$defaultFn(() => 0).notNull(),
+    visitors: integer("visitors").$defaultFn(() => 0).notNull(),
+    quizStarts: integer("quiz_starts").$defaultFn(() => 0).notNull(),
+    quizCompleted: integer("quiz_completed").$defaultFn(() => 0).notNull(),
+    optIns: integer("opt_ins").$defaultFn(() => 0).notNull(),
+    hasProblem: integer("has_problem").$defaultFn(() => 0).notNull(),
+    considerBuy: integer("consider_buy").$defaultFn(() => 0).notNull(),
+    waitlist: integer("waitlist").$defaultFn(() => 0).notNull(),
+    purchases: integer("purchases").$defaultFn(() => 0).notNull(),
+    spendPence: integer("spend_pence").$defaultFn(() => 0).notNull(),
+    notes: text("notes"),
+    createdAt: timestamp("created_at"),
+  },
+  (table) => [index("hypothesis_metrics_hyp_idx").on(table.hypothesisId)],
+);
+
+export const hypothesisAnswers = sqliteTable(
+  "hypothesis_answers",
+  {
+    id: text("id").primaryKey(),
+    hypothesisId: text("hypothesis_id")
+      .notNull()
+      .references(() => painHypotheses.id, { onDelete: "cascade" }),
+    answers: text("answers").notNull(),
+    hasProblem: integer("has_problem", { mode: "boolean" })
+      .$defaultFn(() => false)
+      .notNull(),
+    email: text("email"),
+    createdAt: timestamp("created_at"),
+  },
+  (table) => [index("hypothesis_answers_hyp_idx").on(table.hypothesisId)],
+);
+
+export const affiliateOffers = sqliteTable(
+  "affiliate_offers",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    network: text("network").$defaultFn(() => "clickbank").notNull(),
+    name: text("name").notNull(),
+    salesUrl: text("sales_url").notNull(),
+    vendor: text("vendor"),
+    category: text("category"),
+    description: text("description").notNull(),
+    price: text("price"),
+    commissionType: text("commission_type"),
+    commissionAmount: text("commission_amount"),
+    recurring: integer("recurring", { mode: "boolean" })
+      .$defaultFn(() => false)
+      .notNull(),
+    hopLink: text("hop_link").notNull(),
+    gravity: real("gravity"),
+    avgPayout: text("avg_payout"),
+    dna: text("dna"),
+    assets: text("assets"),
+    countries: text("countries"),
+    createdAt: timestamp("created_at"),
+  },
+  (table) => [index("affiliate_offers_user_idx").on(table.userId)],
+);
+
+export const offerPainMatches = sqliteTable(
+  "offer_pain_matches",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    offerId: text("offer_id")
+      .notNull()
+      .references(() => affiliateOffers.id, { onDelete: "cascade" }),
+    painId: text("pain_id").references(() => pains.id, { onDelete: "set null" }),
+    hypothesisId: text("hypothesis_id").references(() => painHypotheses.id, {
+      onDelete: "set null",
+    }),
+    title: text("title").notNull(),
+    problem: text("problem").notNull(),
+    painScore: integer("pain_score").$defaultFn(() => 0).notNull(),
+    moneyScore: integer("money_score").$defaultFn(() => 0).notNull(),
+    productFit: integer("product_fit").$defaultFn(() => 0).notNull(),
+    underservedScore: integer("underserved_score").$defaultFn(() => 0).notNull(),
+    performanceScore: integer("performance_score").$defaultFn(() => 0).notNull(),
+    recommendable: integer("recommendable", { mode: "boolean" })
+      .$defaultFn(() => true)
+      .notNull(),
+    status: text("status").$defaultFn(() => "new").notNull(),
+    evidenceNote: text("evidence_note"),
+    intentScore: integer("intent_score").$defaultFn(() => 0).notNull(),
+    draftSlug: text("draft_slug"),
+    packJson: text("pack_json"),
+    visitors: integer("visitors").$defaultFn(() => 0).notNull(),
+    quizCompleted: integer("quiz_completed").$defaultFn(() => 0).notNull(),
+    affiliateClicks: integer("affiliate_clicks").$defaultFn(() => 0).notNull(),
+    sales: integer("sales").$defaultFn(() => 0).notNull(),
+    commissionPence: integer("commission_pence").$defaultFn(() => 0).notNull(),
+    createdAt: timestamp("created_at"),
+  },
+  (table) => [
+    index("offer_pain_matches_user_idx").on(table.userId),
+    index("offer_pain_matches_status_idx").on(table.status),
+  ],
+);
+
+export const programmeLeads = sqliteTable(
+  "programme_leads",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    painId: text("pain_id").references(() => pains.id, { onDelete: "set null" }),
+    painTitle: text("pain_title").notNull(),
+    name: text("name").notNull(),
+    network: text("network").notNull(),
+    commission: text("commission").notNull(),
+    cookie: text("cookie").notNull(),
+    price: text("price").notNull(),
+    fit: integer("fit").$defaultFn(() => 0).notNull(),
+    evidence: text("evidence").notNull(),
+    sources: text("sources").notNull(),
+    createdAt: timestamp("created_at"),
+  },
+  (table) => [index("programme_leads_user_idx").on(table.userId)],
+);
+
+export const pageVisits = sqliteTable(
+  "page_visits",
+  {
+    id: text("id").primaryKey(),
+    path: text("path").notNull(),
+    query: text("query"),
+    ip: text("ip").notNull(),
+    country: text("country"),
+    city: text("city"),
+    userAgent: text("user_agent"),
+    referrer: text("referrer"),
+    source: text("source"),
+    sourceHost: text("source_host"),
+    userId: text("user_id").references(() => user.id, { onDelete: "set null" }),
+    email: text("email"),
+    isBot: integer("is_bot", { mode: "boolean" })
+      .$defaultFn(() => false)
+      .notNull(),
+    createdAt: timestamp("created_at"),
+  },
+  (table) => [
+    index("page_visits_created_idx").on(table.createdAt),
+    index("page_visits_ip_idx").on(table.ip),
+    index("page_visits_path_idx").on(table.path),
+  ],
+);
+
 export const userRelations = relations(user, ({ many }) => ({
   sessions: many(session),
   watchlists: many(watchlists),
+  productScans: many(productScans),
+  painHypotheses: many(painHypotheses),
+  affiliateOffers: many(affiliateOffers),
+  offerPainMatches: many(offerPainMatches),
+  programmeLeads: many(programmeLeads),
+  pageVisits: many(pageVisits),
 }));
 
 export const categoryRelations = relations(categories, ({ many }) => ({

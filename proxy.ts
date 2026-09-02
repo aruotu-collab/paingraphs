@@ -12,5 +12,11 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/watchlist/:path*"],
+  matcher: [
+    "/watchlist/:path*",
+    "/workspace",
+    "/workspace/:path*",
+    "/admin",
+    "/admin/:path*",
+  ],
 };
