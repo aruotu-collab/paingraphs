@@ -41,6 +41,27 @@ async function createTables() {
   await db.run(sql`
     CREATE INDEX IF NOT EXISTS page_visits_path_idx ON page_visits (path)
   `);
+  await db.run(sql`
+    CREATE TABLE IF NOT EXISTS page_events (
+      id TEXT PRIMARY KEY,
+      kind TEXT NOT NULL,
+      path TEXT NOT NULL,
+      pain_id TEXT,
+      ip TEXT,
+      user_id TEXT REFERENCES user(id) ON DELETE SET NULL,
+      email TEXT,
+      created_at INTEGER NOT NULL
+    )
+  `);
+  await db.run(sql`
+    CREATE INDEX IF NOT EXISTS page_events_kind_idx ON page_events (kind)
+  `);
+  await db.run(sql`
+    CREATE INDEX IF NOT EXISTS page_events_pain_idx ON page_events (pain_id)
+  `);
+  await db.run(sql`
+    CREATE INDEX IF NOT EXISTS page_events_path_idx ON page_events (path)
+  `);
   for (const stmt of [
     sql`ALTER TABLE page_visits ADD COLUMN source TEXT`,
     sql`ALTER TABLE page_visits ADD COLUMN source_host TEXT`,

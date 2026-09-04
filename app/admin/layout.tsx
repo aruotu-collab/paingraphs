@@ -5,6 +5,7 @@ import { requireAdmin } from "@/lib/session";
 const links = [
   ["Overview", "/admin"],
   ["Visits & IPs", "/admin/visits"],
+  ["Pain pages", "/admin/pains"],
   ["Accounts", "/admin/users"],
   ["Demand data", "/admin/demand"],
   ["Affiliate lab", "/workspace/lab"],

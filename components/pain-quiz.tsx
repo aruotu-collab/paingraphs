@@ -87,6 +87,19 @@ export function PainQuiz({
     });
   }, [signedIn, done, page.id, page.sensitive, initialPriorities]);
 
+  function trackPainGraphClick() {
+    void fetch("/api/event", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        kind: "paingraph_click",
+        path: page.href,
+        painId: page.id,
+      }),
+      keepalive: true,
+    });
+  }
+
   function persist(next = priorities) {
     sessionStorage.setItem(
       quizStorageKey(page.id),
@@ -179,6 +192,7 @@ export function PainQuiz({
           type="button"
           onClick={() => {
             persist();
+            trackPainGraphClick();
             setDone(true);
             document.getElementById("pain-graph-result")?.scrollIntoView({
               behavior: "smooth",
@@ -194,6 +208,7 @@ export function PainQuiz({
           type="button"
           onClick={() => {
             persist();
+            trackPainGraphClick();
             setGate(true);
           }}
           className="mt-8 h-11 bg-copper px-5 text-ink hover:bg-copper-2"

@@ -447,6 +447,25 @@ export const pageVisits = sqliteTable(
   ],
 );
 
+export const pageEvents = sqliteTable(
+  "page_events",
+  {
+    id: text("id").primaryKey(),
+    kind: text("kind").notNull(),
+    path: text("path").notNull(),
+    painId: text("pain_id"),
+    ip: text("ip"),
+    userId: text("user_id").references(() => user.id, { onDelete: "set null" }),
+    email: text("email"),
+    createdAt: timestamp("created_at"),
+  },
+  (table) => [
+    index("page_events_kind_idx").on(table.kind),
+    index("page_events_pain_idx").on(table.painId),
+    index("page_events_path_idx").on(table.path),
+  ],
+);
+
 export const userRelations = relations(user, ({ many }) => ({
   sessions: many(session),
   watchlists: many(watchlists),

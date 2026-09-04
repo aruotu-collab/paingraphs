@@ -124,6 +124,9 @@ export default async function AdminHomePage() {
           ))}
         </ul>
         <div className="mt-6 flex flex-wrap gap-4 text-sm">
+          <Link href="/admin/pains" className="text-copper hover:text-copper-2">
+            Pain page visits
+          </Link>
           <Link href="/admin/visits" className="text-copper hover:text-copper-2">
             Open visit log
           </Link>
