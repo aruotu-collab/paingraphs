@@ -10,6 +10,9 @@ export function Footer() {
         <Link href="/for-founders" className="hover:text-paper">
           Founders
         </Link>
+        <Link href="/billboard" className="hover:text-paper">
+          Painpoint Billboard
+        </Link>
         <Link href="/how-it-works" className="hover:text-paper">
           How it works
         </Link>
@@ -17,7 +20,7 @@ export function Footer() {
           Pricing
         </Link>
         <Link href="/lab" className="hover:text-paper">
-          Testing lab
+          Public tests
         </Link>
         <Link href="/privacy" className="hover:text-paper">
           Privacy

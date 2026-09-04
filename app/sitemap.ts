@@ -14,6 +14,7 @@ const STATIC_PATHS = [
   "/how-it-works",
   "/pricing",
   "/lab",
+  "/billboard",
   "/affiliate-opportunity-finder",
   "/find-profitable-affiliate-niches",
   "/find-underserved-markets",

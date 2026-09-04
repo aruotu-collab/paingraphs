@@ -21,15 +21,19 @@ export default function HowItWorksPage() {
       <section className="mt-12 space-y-8">
         <Block
           title="Shoppers"
-          body="Open a pain page. Read what people actually complain about. Set the sliders. See a PainGraph that ranks option types against your mix."
+          body="Open a published pain page on the homepage. Read what people actually complain about. Set the sliders. See a PainGraph that ranks option types against your mix. Track a live page from there — it lands in your workspace."
+        />
+        <Block
+          title="Painpoint Billboard"
+          body="A separate daily chart of search topics, not live shopper pages. Save topics to investigate, then prepare one in detail when you want a full page."
         />
         <Block
           title="Affiliates"
-          body="Browse pains with products worth promoting. Open the sample affiliate report. Paste a merchant URL if we do not have the pain yet. Copy the Meta and Google packs. You run the ads."
+          body="Use I Want to Earn. Browse published pains with products worth promoting. Open the sample report. Paste a merchant URL on Reverse PainGraph if we do not have the pain yet. You run the ads."
         />
         <Block
           title="Founders"
-          body="Find an underserved pain, or reverse-match a product you already sell. Host a test page on PainGraphs. Drive traffic yourself. Paste results back in so the hypothesis can graduate into the marketplace."
+          body="Use I Want to Build. Find an underserved published pain, or reverse-match a product you already sell. Host the test from your workspace. Public tests are listed separately from the marketplace."
         />
       </section>
 

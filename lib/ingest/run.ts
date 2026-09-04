@@ -3,6 +3,7 @@ import { PAINS } from "@/lib/catalog/data";
 import { ensureCatalog } from "@/lib/catalog/sync";
 import { db } from "@/lib/db";
 import { painSignals, pains } from "@/lib/db/schema";
+import { ingestBillboard } from "@/lib/billboard/ingest";
 import { ingestCustomSearch } from "./custom-search";
 import { ingestKeywordPlanner } from "./keyword-planner";
 import { ingestClickbankDiscover } from "./clickbank-discover";
@@ -18,6 +19,7 @@ const PAIN_SHAPE =
 
 export async function runIngest() {
   await ensureCatalog();
+  const billboard = await ingestBillboard();
   const youtube = await ingestYoutube();
   const searchConsole = await ingestSearchConsole();
   const vertexSearch = await ingestVertexSearch();
@@ -30,6 +32,7 @@ export async function runIngest() {
   await refreshTrends();
 
   const sources = ["catalog"];
+  if (billboard.updated > 0) sources.push("billboard");
   if (youtube > 0) sources.push("youtube");
   if (searchConsole > 0) sources.push("search-console");
   if (vertexSearch.stored + vertexSearch.engineResults > 0) {
@@ -48,6 +51,8 @@ export async function runIngest() {
 
   return {
     catalog: PAINS.length,
+    billboardTopics: billboard.updated,
+    billboardDate: billboard.chartDate,
     discoveredPains: openaiDiscover.pains + clickbankDiscover.pains + redditDiscover.pains,
     discoveredQuotes: openaiDiscover.quotes + clickbankDiscover.quotes + redditDiscover.quotes,
     youtubeComments: youtube,

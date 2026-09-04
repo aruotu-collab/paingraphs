@@ -7,7 +7,7 @@ import { authClient } from "@/lib/auth-client";
 
 export function AuthForm({
   mode,
-  next = "/watchlist",
+  next = "/workspace",
 }: {
   mode: "login" | "signup";
   next?: string;

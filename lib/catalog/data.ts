@@ -709,6 +709,7 @@ export const RESERVED_PATHS = new Set([
   "account",
   "admin",
   "watchlist",
+  "billboard",
   "privacy",
   "market",
   "api",

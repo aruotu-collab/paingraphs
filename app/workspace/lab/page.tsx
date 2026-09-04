@@ -142,8 +142,8 @@ export default async function AffiliateLabPage({
         <Link href="/workspace" className="text-copper hover:text-copper-2">
           Reverse PainGraph scans
         </Link>
-        <Link href="/watchlist" className="text-copper hover:text-copper-2">
-          Consumer watchlist
+        <Link href="/billboard" className="text-copper hover:text-copper-2">
+          Painpoint Billboard
         </Link>
       </div>
 

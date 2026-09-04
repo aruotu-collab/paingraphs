@@ -3,9 +3,9 @@ import { AuthStatus } from "@/components/auth-status";
 
 const links = [
   { href: "/", label: "Explore Pains" },
+  { href: "/billboard", label: "Painpoint Billboard" },
   { href: "/for-affiliates", label: "I Want to Earn" },
   { href: "/for-founders", label: "I Want to Build" },
-  { href: "/how-it-works", label: "How It Works" },
 ];
 
 export function Header() {

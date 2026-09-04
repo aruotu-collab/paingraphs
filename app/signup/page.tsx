@@ -6,7 +6,7 @@ export default async function SignupPage({
   searchParams: Promise<{ next?: string }>;
 }) {
   const params = await searchParams;
-  const next = typeof params.next === "string" ? params.next : "/watchlist";
+  const next = typeof params.next === "string" ? params.next : "/workspace";
 
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col justify-center px-5 py-16">

@@ -83,6 +83,7 @@ export async function toggleWatch(painId: string) {
       painId,
     });
   }
+  revalidatePath("/workspace");
   revalidatePath("/watchlist");
   return { ok: true };
 }

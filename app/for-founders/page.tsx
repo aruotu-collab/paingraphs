@@ -1,9 +1,7 @@
 import Link from "next/link";
 import { PainCard } from "@/components/pain-card";
-import { ProductScanForm } from "@/components/product-scan-form";
 import { marketplaceLabels } from "@/lib/journeys/labels";
 import { getPainPage, listMarketPains } from "@/lib/market/queries";
-import { getSession } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
@@ -14,7 +12,6 @@ export const metadata = {
 };
 
 export default async function FoundersPage() {
-  const session = await getSession();
   const pains = await listMarketPains();
   const example =
     (await getPainPage("electronics", "headphones", "glasses-pressure")) ??
@@ -75,16 +72,15 @@ export default async function FoundersPage() {
           </p>
           <h2 className="mt-3 font-display text-3xl">Reverse PainGraph</h2>
           <p className="mt-3 text-sm leading-6 text-muted">
-            Paste your product URL. PainGraphs finds the strongest pains and
-            overlooked audiences it may solve. Guests see the first match.
-            The rest unlock after sign-in.
+            Already selling? Paste the product URL on the Reverse PainGraph
+            page. Guests see the first match. Sign in to host a test page.
           </p>
-          <div className="mt-6">
-            <ProductScanForm
-              signedIn={Boolean(session)}
-              intent="founder"
-            />
-          </div>
+          <Link
+            href="/reverse-product-research"
+            className="mt-6 inline-block border border-copper px-5 py-2.5 text-copper hover:bg-copper hover:text-ink"
+          >
+            Paste a product URL
+          </Link>
         </section>
       </div>
 

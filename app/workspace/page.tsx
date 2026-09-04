@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { CampaignPackView } from "@/components/campaign-pack";
 import { MetricsForm } from "@/components/metrics-form";
+import { PainCard } from "@/components/pain-card";
 import { ProductScanForm } from "@/components/product-scan-form";
 import {
   listWorkspace,
@@ -9,6 +10,8 @@ import {
 } from "@/lib/journeys/actions";
 import { parsePack, parseQuestions } from "@/lib/journeys/parse";
 import { isAdminEmail } from "@/lib/admin";
+import { listWatchIds } from "@/lib/market/actions";
+import { listMarketPains } from "@/lib/market/queries";
 import { getSession } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
@@ -16,9 +19,14 @@ export const dynamic = "force-dynamic";
 export default async function WorkspacePage() {
   const session = await getSession();
   if (!session) redirect("/login?next=/workspace");
-  const data = await listWorkspace();
+  const [data, watchIds, pains] = await Promise.all([
+    listWorkspace(),
+    listWatchIds(),
+    listMarketPains(),
+  ]);
   const hyps = data?.hyps ?? [];
   const scans = data?.scans ?? [];
+  const tracked = pains.filter((pain) => watchIds.includes(pain.id));
 
   return (
     <main className="mx-auto w-full max-w-5xl flex-1 px-5 py-10">
@@ -27,24 +35,26 @@ export default async function WorkspacePage() {
       </p>
       <h1 className="mt-3 font-display text-4xl">Earn and build from the same login.</h1>
       <p className="mt-4 max-w-2xl text-sm leading-6 text-muted">
-        Reverse URL scans live here.{" "}
+        This is the signed-in home. Paste a product URL, keep tracked marketplace
+        pains, and host test pages. Topics you want to investigate live on the{" "}
+        <Link href="/billboard/favourites" className="text-copper hover:text-copper-2">
+          Billboard favourites
+        </Link>
+        . You run ads from your own accounts.
         {isAdminEmail(session.user.email) ? (
           <>
-            Operator tools are in the{" "}
+            {" "}
+            Operator tools:{" "}
             <Link href="/admin" className="text-copper hover:text-copper-2">
-              admin console
-            </Link>{" "}
-            and{" "}
+              admin
+            </Link>
+            {" · "}
             <Link href="/workspace/lab" className="text-copper hover:text-copper-2">
               affiliate lab
             </Link>
-            .{" "}
+            .
           </>
         ) : null}
-        <Link href="/watchlist" className="text-copper hover:text-copper-2">
-          Consumer watchlist
-        </Link>{" "}
-        is still available. You run ads from your own Meta and Google accounts.
       </p>
 
       <section className="mt-10">
@@ -52,6 +62,25 @@ export default async function WorkspacePage() {
         <div className="mt-5">
           <ProductScanForm signedIn intent="founder" />
         </div>
+      </section>
+
+      <section className="mt-16">
+        <h2 className="font-display text-3xl">Tracked marketplace pains</h2>
+        <p className="mt-3 text-sm text-muted">
+          Published shopper pages you marked with Track this pain. Not the same
+          as Billboard favourites, which are research topics.
+        </p>
+        {tracked.length === 0 ? (
+          <p className="mt-4 text-sm text-muted">
+            None yet. Open a live pain page and choose Track this pain.
+          </p>
+        ) : (
+          <div className="mt-6 grid gap-4">
+            {tracked.map((pain) => (
+              <PainCard key={pain.id} pain={pain} />
+            ))}
+          </div>
+        )}
       </section>
 
       <section className="mt-16">

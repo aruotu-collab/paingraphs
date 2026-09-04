@@ -7,8 +7,6 @@ export const dynamic = "force-dynamic";
 export default async function HomePage() {
   const pains = await listMarketPains();
   const trending = [...pains].sort((a, b) => b.trend - a.trend);
-  const affiliate = pains.filter((pain) => pain.affiliateScore >= 75);
-  const productOps = pains.filter((pain) => pain.productGap >= 65);
 
   return (
     <main className="mx-auto w-full max-w-6xl flex-1 px-5 py-10">
@@ -19,8 +17,9 @@ export default async function HomePage() {
         A live exchange of consumer pain.
       </h1>
       <p className="mt-5 max-w-2xl text-lg leading-8 text-muted">
-        Shoppers get a decision tool. Affiliates get products worth promoting.
-        Founders get underserved markets. Same pains. Three doors.
+        Shoppers get a decision tool. Affiliates and founders use the same
+        published pains. The Billboard is a separate daily chart of topics still
+        being researched.
       </p>
 
       <div className="mt-10 grid gap-4 md:grid-cols-3">
@@ -48,7 +47,7 @@ export default async function HomePage() {
       </div>
 
       <dl className="mt-10 grid gap-px bg-line sm:grid-cols-3">
-        <Tile label="Tracked pains" value={String(pains.length)} />
+        <Tile label="Published pains" value={String(pains.length)} />
         <Tile label="Updated" value="today" />
         <Tile
           label="Hottest move"
@@ -56,9 +55,15 @@ export default async function HomePage() {
         />
       </dl>
 
-      <Section title="Trending consumer pains" items={trending} extra />
-      <Section title="Affiliate opportunities" items={affiliate} extra />
-      <Section title="Product gaps" items={productOps} extra />
+      <p className="mt-8 text-sm text-muted">
+        Looking for today&apos;s search topics, not live shopper pages?{" "}
+        <Link href="/billboard" className="text-copper hover:text-copper-2">
+          Open the Painpoint Billboard
+        </Link>
+        .
+      </p>
+
+      <Section title="Live marketplace" items={trending} extra />
     </main>
   );
 }

@@ -466,6 +466,49 @@ export const pageEvents = sqliteTable(
   ],
 );
 
+export const billboardTopics = sqliteTable(
+  "billboard_topics",
+  {
+    id: text("id").primaryKey(),
+    slug: text("slug").notNull().unique(),
+    title: text("title").notNull(),
+    problem: text("problem").notNull(),
+    whyNow: text("why_now").notNull(),
+    categorySlug: text("category_slug").notNull(),
+    categoryName: text("category_name").notNull(),
+    searchPhrase: text("search_phrase").notNull(),
+    evidence: text("evidence").notNull(),
+    sources: text("sources").notNull(),
+    heat: integer("heat").notNull(),
+    intent: integer("intent").notNull(),
+    pain: integer("pain").notNull(),
+    rank: integer("rank").notNull(),
+    daysOnChart: integer("days_on_chart").notNull(),
+    chartDate: text("chart_date").notNull(),
+    painId: text("pain_id"),
+    firstSeenAt: timestamp("first_seen_at"),
+    lastSeenAt: timestamp("last_seen_at"),
+  },
+  (table) => [index("billboard_topics_rank_idx").on(table.rank)],
+);
+
+export const billboardFavourites = sqliteTable(
+  "billboard_favourites",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    topicId: text("topic_id")
+      .notNull()
+      .references(() => billboardTopics.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at"),
+  },
+  (table) => [
+    uniqueIndex("billboard_fav_user_topic_idx").on(table.userId, table.topicId),
+  ],
+);
+
 export const userRelations = relations(user, ({ many }) => ({
   sessions: many(session),
   watchlists: many(watchlists),
