@@ -29,10 +29,56 @@ export type CatalogProduct = {
   priceBand: string;
 };
 
+export type ProgrammeKind = "brand" | "retailer" | "network" | "merchant";
+
+export type ProgrammeStatus =
+  | "confirmed"
+  | "likely"
+  | "merchant_needs_confirmation"
+  | "sku_needs_confirmation"
+  | "none"
+  | "manual_research";
+
+export type CatalogProgramme = {
+  id: string;
+  productId: string;
+  name: string;
+  kind: ProgrammeKind;
+  status: ProgrammeStatus;
+  country: string | null;
+  joinUrl: string | null;
+  note: string;
+};
+
 export type CatalogFit = {
   productId: string;
   scores: Record<string, number>;
   note: string;
+};
+
+export type CatalogDiagnosticOption = {
+  id: string;
+  label: string;
+  emphasize: string[];
+  factors: string[];
+  profileLabel: string;
+};
+
+export type CatalogDiagnosticQuestion = {
+  id: string;
+  prompt: string;
+  options: CatalogDiagnosticOption[];
+};
+
+export type CatalogConsumerIntel = {
+  whyItHappens: string;
+  triedFirst: string[];
+  usuallyFails: string[];
+  mistakes: string[];
+  tradeoffs: string[];
+  profile: string;
+  recentlyChanged?: string | null;
+  diagnostic: CatalogDiagnosticQuestion[];
 };
 
 export type CatalogSignal = {
@@ -67,4 +113,5 @@ export type CatalogPain = {
   criteria: CatalogCriterion[];
   products: CatalogFit[];
   signals: CatalogSignal[];
+  consumer?: CatalogConsumerIntel;
 };

@@ -206,9 +206,9 @@ export const PAINS: CatalogPain[] = [
     problem:
       "Over-ear cups trap spectacle arms against the skull. After 20–60 minutes the temple aches, the frames slip, or both.",
     analysis:
-      "Most “best headphones for glasses” lists still pick a closed-back studio headphone. Those block outside noise, and they also press the arms of your glasses into your head. Soft pads do not fix a tight band — the frames still get sandwiched between the cup and your skull.\n\nThe real choice is how much squeeze, weight, and heat you will accept in exchange for silence. There is no single winner here. The ranking at the bottom is for the mix you set with the sliders, not for a reviewer who does not wear glasses.",
+      "Soft pads do not fix a tight band. The cup still sandwiches your frames against your temple, then heat builds on a long call. People try pushing their glasses up, switching to on-ears, or giving up on over-ears after an hour.",
     whyNow:
-      "Work calls got longer, and people kept their glasses on. The ache that used to show up on a long flight now shows up every weekday. That is why this is a product problem, not a niche complaint.",
+      "This hits people who wear glasses through a workday — calls, commuting, and desk time — not only long-haul flights.",
     strategy: "affiliate now → own product later",
     stage: 4,
     painScore: 91,
@@ -291,6 +291,111 @@ export const PAINS: CatalogPain[] = [
         sourceLabel: "Composite of repeated public review language",
       },
     ],
+    consumer: {
+      whyItHappens:
+        "The ear cup and the headband close a gap that your glasses arms already occupy. The pad does not float over the frame — it presses the arm into your temple. Soft foam only delays that pinch. A tighter clamp, thicker arms, or a long session makes it show up sooner.",
+      triedFirst: [
+        "Loosening the headband or stretching it overnight",
+        "Pushing glasses up or switching to thinner frames for calls",
+        "Adding aftermarket pads or glasses-friendly cushions",
+        "Switching to on-ears, or giving up on over-ears after an hour",
+      ],
+      usuallyFails: [
+        "Buying softer pads alone, when clamp force is the real issue",
+        "Choosing a sealed studio headphone because a review called the pads plush",
+        "Assuming a higher price means it will work with glasses",
+      ],
+      mistakes: [
+        "Do not assume the softest ear pads mean the least glasses pressure. Clamp force and how the cup sits on the frame usually matter more.",
+        "Do not chase maximum isolation first if temple pinch is the complaint. A tighter seal often means a tighter squeeze.",
+      ],
+      tradeoffs: [
+        "Lower clamp and open-ear designs leave space at the temple, but they let more room noise in.",
+        "Plush sealed cups block sound well, and they often trap frames after about an hour.",
+        "Lightweight on-ears run cooler, and a tight band can still press thin frames.",
+      ],
+      profile:
+        "Most often long-session users — calls, commuting, desk time — wearing glasses with the cups on. Thicker arms and tighter headsets show it sooner.",
+      recentlyChanged:
+        "The complaint used to show up on long flights. Workdays with glasses on made it a daily product problem, not a travel niche.",
+      diagnostic: [
+        {
+          id: "discomfort",
+          prompt: "What kind of discomfort are you getting?",
+          options: [
+            {
+              id: "temple",
+              label: "Pressure on temples",
+              emphasize: ["clamp", "weight"],
+              factors: ["low clamp force", "space at the temple", "lower weight"],
+              profileLabel: "Temple pressure",
+            },
+            {
+              id: "ear",
+              label: "Ear pain",
+              emphasize: ["heat", "weight"],
+              factors: ["lower weight", "cooler cups", "less clamp"],
+              profileLabel: "Ear pain",
+            },
+            {
+              id: "headache",
+              label: "Headache after long use",
+              emphasize: ["clamp", "weight"],
+              factors: ["low clamp force", "lower weight", "breaks in the session"],
+              profileLabel: "Headache after long use",
+            },
+            {
+              id: "frames",
+              label: "Glasses pushed out of position",
+              emphasize: ["clamp"],
+              factors: ["low clamp force", "space at the temple", "frames that stay put"],
+              profileLabel: "Frames slipping or being pushed",
+            },
+            {
+              id: "seal",
+              label: "Poor seal around earcups",
+              emphasize: ["isolation", "clamp"],
+              factors: ["cup shape around frames", "isolation you can live with", "clamp you can wear"],
+              profileLabel: "Poor seal around the cups",
+            },
+          ],
+        },
+        {
+          id: "duration",
+          prompt: "How long do you usually wear headphones?",
+          options: [
+            {
+              id: "short",
+              label: "Under 1 hour",
+              emphasize: ["price"],
+              factors: ["a fit you notice quickly"],
+              profileLabel: "short sessions",
+            },
+            {
+              id: "medium",
+              label: "1–3 hours",
+              emphasize: ["clamp", "heat"],
+              factors: ["low clamp force", "cooler cups"],
+              profileLabel: "1–3 hour sessions",
+            },
+            {
+              id: "long",
+              label: "3–6 hours",
+              emphasize: ["clamp", "weight", "heat"],
+              factors: ["low clamp force", "lower weight", "cooler cups"],
+              profileLabel: "long sessions",
+            },
+            {
+              id: "allday",
+              label: "All day",
+              emphasize: ["clamp", "weight", "heat"],
+              factors: ["low clamp force", "lower weight", "cooler cups"],
+              profileLabel: "all-day wear",
+            },
+          ],
+        },
+      ],
+    },
   },
   {
     id: "pain-quiet",
@@ -706,8 +811,15 @@ export const PAINS: CatalogPain[] = [
 export const RESERVED_PATHS = new Set([
   "login",
   "signup",
+  "home",
+  "go",
   "account",
   "admin",
+  "marketing-agent",
+  "forbidden",
+  "affiliates",
+  "founders",
+  "top-pains",
   "watchlist",
   "billboard",
   "privacy",

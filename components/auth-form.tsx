@@ -5,9 +5,40 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
 
+function withSignupLenses(next: string, form: FormData) {
+  const url = new URL(next, "https://paingraphs.local");
+  if (form.get("lens-affiliate") === "1") url.searchParams.set("affiliate", "1");
+  if (form.get("lens-founder") === "1") url.searchParams.set("founder", "1");
+  return `${url.pathname}${url.search}`;
+}
+
+function SignupLenses() {
+  return (
+    <fieldset className="space-y-2 text-sm">
+      <legend className="text-muted">How would you like to use PainGraphs?</legend>
+      <p className="text-xs text-muted">
+        Consumer access is always included. You can add more later on the same
+        account.
+      </p>
+      <label className="flex items-start gap-2">
+        <input type="checkbox" name="lens-solve" value="1" defaultChecked disabled />
+        <span>Solve and save pains</span>
+      </label>
+      <label className="flex items-start gap-2">
+        <input type="checkbox" name="lens-affiliate" value="1" />
+        <span>Find affiliate opportunities</span>
+      </label>
+      <label className="flex items-start gap-2">
+        <input type="checkbox" name="lens-founder" value="1" />
+        <span>Find products worth building</span>
+      </label>
+    </fieldset>
+  );
+}
+
 export function AuthForm({
   mode,
-  next = "/workspace",
+  next = "/home",
 }: {
   mode: "login" | "signup";
   next?: string;
@@ -25,18 +56,19 @@ export function AuthForm({
     const form = new FormData(event.currentTarget);
     const email = String(form.get("email") || "").trim().toLowerCase();
     const name = String(form.get("name") || email.split("@")[0] || "there");
+    const callbackURL = withSignupLenses(next, form);
     const result = await authClient.signIn.magicLink({
       email,
       name,
-      callbackURL: next,
-      newUserCallbackURL: next,
+      callbackURL,
+      newUserCallbackURL: callbackURL,
     });
     setPending(false);
     if (result.error) {
       setError(result.error.message || "Could not send the sign-in link.");
       return;
     }
-    setStatus(`Check ${email}. Click the link and you’ll land back where you left off.`);
+    setStatus(`Check ${email}. Click the link and you will come back signed in.`);
   }
 
   async function onPassword(event: FormEvent<HTMLFormElement>) {
@@ -44,25 +76,20 @@ export function AuthForm({
     setError("");
     setStatus("");
     setPending(true);
-
     const form = new FormData(event.currentTarget);
     const name = String(form.get("name") || "");
     const email = String(form.get("email") || "");
     const password = String(form.get("password") || "");
-
     const result =
       mode === "signup"
         ? await authClient.signUp.email({ name, email, password })
         : await authClient.signIn.email({ email, password });
-
     setPending(false);
-
     if (result.error) {
       setError(result.error.message || "Something went wrong.");
       return;
     }
-
-    router.push(next);
+    router.push(withSignupLenses(next, form));
     router.refresh();
   }
 
@@ -89,6 +116,7 @@ export function AuthForm({
             className="h-11 w-full border border-line bg-ink-2 px-3 outline-none focus:border-copper"
           />
         </label>
+        {mode === "signup" ? <SignupLenses /> : null}
         {error ? <p className="text-sm text-red-400">{error}</p> : null}
         {status ? <p className="text-sm text-signal">{status}</p> : null}
         <button
@@ -98,14 +126,9 @@ export function AuthForm({
         >
           {pending ? "Sending…" : "Email me a sign-in link"}
         </button>
-        <p className="text-center text-sm text-muted">
-          Click the link in the email. You’ll come back signed in, no password.
-        </p>
       </form>
       <form onSubmit={onPassword} className="space-y-5 border-t border-line pt-8">
-        <p className="text-xs uppercase tracking-[0.16em] text-muted">
-          Or use a password
-        </p>
+        <p className="text-xs uppercase tracking-[0.16em] text-muted">Or use a password</p>
         {mode === "signup" ? (
           <label className="block space-y-2 text-sm">
             <span className="text-muted">Name</span>
@@ -126,6 +149,7 @@ export function AuthForm({
             className="h-11 w-full border border-line bg-ink-2 px-3 outline-none focus:border-copper"
           />
         </label>
+        {mode === "signup" ? <SignupLenses /> : null}
         <label className="block space-y-2 text-sm">
           <span className="text-muted">Password</span>
           <input

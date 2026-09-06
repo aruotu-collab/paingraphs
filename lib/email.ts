@@ -83,3 +83,77 @@ export async function sendMagicLinkEmail({
     throw new Error(detail.slice(0, 180) || "Could not send the sign-in email.");
   }
 }
+
+export async function sendAlertDigestEmail({
+  email,
+  items,
+}: {
+  email: string;
+  items: { title: string; body: string; href: string }[];
+}) {
+  const key = process.env.RESEND_API_KEY;
+  const from = process.env.EMAIL_FROM ?? "PainGraphs <hello@paingraphs.com>";
+  const lines = items.map((item) => {
+    const url = item.href.startsWith("http") ? item.href : `${SITE_URL}${item.href}`;
+    return `${item.title}\n${item.body}\n${url}`;
+  });
+  const text = [
+    "Updates on PainGraphs you follow.",
+    "",
+    ...lines,
+    "",
+    `Manage email alerts: ${SITE_URL}/home/alerts`,
+    `Privacy: ${SITE_URL}/privacy`,
+  ].join("\n\n");
+  const htmlItems = items
+    .map((item) => {
+      const url = escapeHtml(
+        item.href.startsWith("http") ? item.href : `${SITE_URL}${item.href}`,
+      );
+      return `<p style="margin:0 0 8px;font-size:16px;line-height:1.6;"><strong>${escapeHtml(item.title)}</strong><br>${escapeHtml(item.body)}<br><a href="${url}" style="color:#c4923d;">Open</a></p>`;
+    })
+    .join("");
+
+  if (!key) {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error("Email sending is not configured.");
+    }
+    console.info(`[alert-digest] ${email}\n${text}`);
+    return;
+  }
+
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${key}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      from,
+      to: email,
+      subject:
+        items.length === 1
+          ? items[0].title
+          : `${items.length} PainGraphs updates`,
+      text,
+      html: `<!DOCTYPE html>
+<html>
+<body style="margin:0;padding:0;background:#ffffff;color:#111111;font-family:Arial,Helvetica,sans-serif;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#ffffff;">
+    <tr>
+      <td align="left" style="padding:32px 24px;">
+        <p style="margin:0 0 20px;font-size:16px;line-height:1.6;">Updates on PainGraphs you follow.</p>
+        ${htmlItems}
+        <p style="margin:24px 0 0;font-size:12px;line-height:1.5;color:#666666;"><a href="${SITE_URL}/home/alerts" style="color:#666666;">Manage email alerts</a> · <a href="${SITE_URL}/privacy" style="color:#666666;">Privacy</a></p>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`,
+    }),
+  });
+  if (!response.ok) {
+    const detail = await response.text();
+    throw new Error(detail.slice(0, 180) || "Could not send the alert email.");
+  }
+}

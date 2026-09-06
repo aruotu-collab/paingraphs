@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
-import { runIngest } from "@/lib/ingest/run";
+import { runSavedPainAlerts } from "@/lib/alerts/run";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 120;
 
 export async function GET(request: Request) {
   const secret = process.env.CRON_SECRET;
@@ -10,6 +9,10 @@ export async function GET(request: Request) {
   if (secret && auth !== `Bearer ${secret}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  const stats = await runIngest();
-  return NextResponse.json(stats);
+  const alerts = await runSavedPainAlerts();
+  return NextResponse.json({
+    ok: true,
+    alerts,
+    reason: "Saved-pain alerts and daily opportunities. The old discovery pipeline stays removed.",
+  });
 }

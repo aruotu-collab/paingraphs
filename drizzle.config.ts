@@ -1,5 +1,5 @@
 import { defineConfig } from "drizzle-kit";
-import { loadLocalEnv } from "./lib/ingest/load-env";
+import { loadLocalEnv } from "./lib/env";
 
 loadLocalEnv();
 

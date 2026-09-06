@@ -5,11 +5,10 @@ import { authClient } from "@/lib/auth-client";
 
 export function SignOutButton() {
   const router = useRouter();
-
   return (
     <button
       type="button"
-      className="text-muted hover:text-paper"
+      className="text-sm text-muted hover:text-paper"
       onClick={async () => {
         await authClient.signOut();
         router.push("/");

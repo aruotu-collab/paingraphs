@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import { db } from "@/lib/db";
+import { ensureIdentityTables } from "@/lib/identity/db";
 
 let ready: Promise<void> | null = null;
 
@@ -14,6 +15,7 @@ export async function ensureAdminTables() {
 }
 
 async function createTables() {
+  await ensureIdentityTables();
   await db.run(sql`
     CREATE TABLE IF NOT EXISTS page_visits (
       id TEXT PRIMARY KEY,

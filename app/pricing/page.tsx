@@ -1,90 +1,101 @@
 import Link from "next/link";
+import { BillingPortalButton } from "@/components/billing-portal-button";
+import { CheckoutButton } from "@/components/checkout-button";
+import { refreshSubscription } from "@/lib/billing/store";
+import { formatAccessUntil, stripeConfigured } from "@/lib/billing/stripe";
+import { entitlements } from "@/lib/identity/profile";
+import { getAccess, getSession } from "@/lib/session";
+
+export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "Pricing",
-  description:
-    "Self-serve PainGraphs plans for affiliates and founders. Campaign packs, test pages, and analysis. You run the ads.",
+  description: "Free consumer access. One Pro plan unlocks Affiliate and Founder.",
 };
 
-const plans = [
-  {
-    name: "Free",
-    price: "£0",
-    detail: "See the market. Try one sample Reverse PainGraph.",
-    points: [
-      "Browse the Pain Marketplace",
-      "Consumer PainGraphs",
-      "Sample affiliate and founder reports",
-      "One URL preview (first match only)",
-    ],
-  },
-  {
-    name: "Affiliate",
-    price: "£39/mo",
-    detail: "Find pains worth promoting and leave with a campaign pack.",
-    points: [
-      "5 product URL analyses / month",
-      "Affiliate matching against live pains",
-      "Meta, Google, email, and SEO packs",
-      "Hosted test pages",
-      "Paste-in campaign results",
-    ],
-  },
-  {
-    name: "Founder",
-    price: "£99/mo",
-    detail: "Hypotheses, test pages, waitlists, and positioning evidence.",
-    points: [
-      "Everything in Affiliate",
-      "Multiple pain hypotheses per URL",
-      "Validation questionnaires",
-      "Waitlist capture on PainGraphs",
-      "Founder reports as evidence accumulates",
-    ],
-  },
+const freePoints = [
+  "Browse public PainGraphs",
+  "Use recommendation sliders",
+  "Save and follow a limited set of pains",
+  "Basic alerts on saved pains",
+  "Preview Affiliate and Founder insights",
 ];
 
-export default function PricingPage() {
+const proPoints = [
+  "Full Affiliate and Founder modes",
+  "Opportunity scores and evidence depth",
+  "Personal affiliate link vault",
+  "Campaign briefs and My Products",
+];
+
+export default async function PricingPage() {
+  const session = await getSession();
+  const billing = session ? await refreshSubscription(session.user.id) : null;
+  const access = session
+    ? await getAccess(session.user).then(({ profile, capabilities }) =>
+        entitlements(profile, capabilities.admin || capabilities.marketingAgent),
+      )
+    : { plan: "free" as const, pro: false };
+  const configured = stripeConfigured();
+  const cancelAt = billing?.stripeCancelAt ?? null;
+
   return (
-    <main className="mx-auto w-full max-w-5xl flex-1 px-5 py-10">
+    <main className="mx-auto w-full max-w-5xl flex-1 px-5 py-12">
       <p className="text-xs uppercase tracking-[0.18em] text-copper">Pricing</p>
-      <h1 className="mt-3 font-display text-5xl">
-        You bring the traffic. PainGraphs does the research.
-      </h1>
+      <h1 className="mt-3 font-display text-5xl">One account. Three jobs.</h1>
       <p className="mt-5 max-w-2xl text-lg leading-8 text-muted">
-        Self-service only. No managed ads. One account can use affiliate and
-        founder tools. Checkout is not wired yet — create an account and we will
-        open the workspace with the current monthly analysis limit.
+        Consumer access is always included. Founder and Affiliate are one Pro
+        subscription. Checkout uses Stripe.
       </p>
-      <div className="mt-10 grid gap-4 md:grid-cols-3">
-        {plans.map((plan) => (
-          <article key={plan.name} className="flex flex-col border border-line p-5">
-            <h2 className="font-display text-3xl">{plan.name}</h2>
-            <p className="mt-2 font-mono text-2xl text-copper">{plan.price}</p>
-            <p className="mt-3 text-sm leading-6 text-muted">{plan.detail}</p>
-            <ul className="mt-5 flex-1 space-y-2 text-sm text-paper">
-              {plan.points.map((point) => (
-                <li key={point}>{point}</li>
-              ))}
-            </ul>
-            <Link
-              href="/signup?next=/workspace"
-              className="mt-6 border border-copper px-4 py-2 text-center text-sm text-copper hover:bg-copper hover:text-ink"
-            >
-              Create account
-            </Link>
-          </article>
-        ))}
+      <div className="mt-10 grid gap-4 md:grid-cols-2">
+        <article className="flex flex-col border border-line p-5">
+          <h2 className="font-display text-3xl">Free</h2>
+          <p className="mt-2 font-mono text-2xl text-copper">£0</p>
+          <p className="mt-3 text-sm leading-6 text-muted">
+            Solve pains now. Preview professional intelligence.
+          </p>
+          <ul className="mt-5 flex-1 space-y-2 text-sm">
+            {freePoints.map((point) => (
+              <li key={point}>{point}</li>
+            ))}
+          </ul>
+          <Link
+            href={session ? "/home" : "/signup?next=/home"}
+            className="mt-6 border border-line px-4 py-2 text-center text-sm text-muted hover:border-copper hover:text-copper"
+          >
+            {session ? "Open member home" : "Get started"}
+          </Link>
+        </article>
+
+        <article className="flex flex-col border border-copper p-5">
+          <h2 className="font-display text-3xl">Pro</h2>
+          <p className="mt-2 font-mono text-2xl text-copper">£39/mo</p>
+          <p className="mt-3 text-sm leading-6 text-muted">
+            One paid plan unlocks both Promote and Build.
+          </p>
+          <ul className="mt-5 flex-1 space-y-2 text-sm">
+            {proPoints.map((point) => (
+              <li key={point}>{point}</li>
+            ))}
+          </ul>
+          {access.pro ? (
+            <div className="mt-6 space-y-3">
+              <p className="text-sm text-copper">
+                {access.plan === "owner" ? "Owner access is already unlocked." : "You are on Pro."}
+              </p>
+              {access.plan !== "owner" && cancelAt ? (
+                <p className="text-sm text-muted">
+                  Cancels on {formatAccessUntil(cancelAt)}. Access stays until
+                  then.
+                </p>
+              ) : null}
+              {access.plan !== "owner" ? <BillingPortalButton /> : null}
+            </div>
+          ) : (
+            <CheckoutButton signedIn={Boolean(session)} configured={configured} />
+          )}
+        </article>
       </div>
-      <section className="mt-14">
-        <h2 className="font-display text-3xl">One-off credits, later</h2>
-        <p className="mt-3 max-w-2xl text-sm leading-6 text-muted">
-          Reverse PainGraph report £19 · full product validation pack £49 ·
-          founder launch pack £99. These will sit beside the subscription once
-          checkout is live. Until then the workspace uses the monthly analysis
-          cap.
-        </p>
-      </section>
     </main>
   );
 }

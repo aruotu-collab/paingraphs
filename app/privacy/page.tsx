@@ -1,30 +1,21 @@
 export default function PrivacyPage() {
   return (
-    <main className="mx-auto w-full max-w-3xl flex-1 px-5 py-10">
-      <h1 className="font-display text-4xl">Privacy and email</h1>
+    <main className="mx-auto w-full max-w-3xl flex-1 px-5 py-12">
+      <h1 className="font-display text-4xl">Privacy</h1>
       <div className="mt-6 space-y-4 leading-7 text-muted">
         <p>
-          Completing the sliders does not subscribe you. Seeing your PainGraph
-          sends a sign-in link to your email and creates a PainGraphs account
-          when you click it. We only send marketing if you tick that box.
-          Health-related pages still need their own explicit tick.
+          You can browse PainGraphs and use recommendation sliders without an
+          account. Saving a pain or following updates requires an email.
+          Alert emails are off unless you turn them on under member Alerts.
         </p>
         <p>
-          PainGraphs keeps the consumer relationship. We do not sell or hand
-          over raw email lists to founders or affiliates. Campaigns, if we add
-          them later, run inside PainGraphs to people who opted in.
+          We do not sell member lists to affiliates or founders. Private
+          affiliate URLs stay on the member account that saved them.
         </p>
         <p>
-          The site operator may log page paths, IP address, approximate
-          location when the host provides it, browser user agent, and referrer
-          so they can see traffic and protect the service. Sign-in tokens are
-          not stored in that log. We do not sell this data.
-        </p>
-        <p>
-          Composite quotes on pages are aggregated research language, not a
-          claim that a named person posted that sentence. Live YouTube comments
-          are stored only when pulled through the official API and still sound
-          like a real problem.
+          The operator may log page paths, IP address, approximate location when
+          the host provides it, browser user agent, and referrer. Sign-in tokens
+          are not stored in that log.
         </p>
       </div>
     </main>

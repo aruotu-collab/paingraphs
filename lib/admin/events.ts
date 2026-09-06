@@ -8,7 +8,7 @@ import {
   painClusters,
   pains,
 } from "@/lib/db/schema";
-import { painHref } from "@/lib/market/queries";
+import { painHref } from "@/lib/paingraph/path";
 import { clientIp, isBotUa, sourceLabel } from "./visits";
 import { ensureAdminTables } from "./db";
 

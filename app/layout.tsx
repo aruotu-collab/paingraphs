@@ -2,9 +2,8 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Instrument_Serif } from "next/font/google";
 import { GoogleAnalytics } from "@next/third-parties/google";
 import { Suspense } from "react";
-import { Footer } from "@/components/footer";
-import { Header } from "@/components/header";
-import { PhaseBanner } from "@/components/phase-banner";
+import { SiteFooter } from "@/components/site-footer";
+import { SiteHeader } from "@/components/site-header";
 import { VisitTracker } from "@/components/visit-tracker";
 import { SITE_URL } from "@/lib/site";
 import "./globals.css";
@@ -28,33 +27,20 @@ const instrument = Instrument_Serif({
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "PainGraphs — a live market of consumer pain",
+    default: "PainGraphs — see what people are struggling with",
     template: "%s · PainGraphs",
   },
   description:
-    "Pain-first decision tools and a daily marketplace of structured consumer pains for affiliates and founders.",
-  alternates: {
-    canonical: "/",
-  },
+    "A live marketplace of problems, unmet demand, and commercial opportunities. Solve a pain, promote a solution, or build a better one.",
+  alternates: { canonical: "/" },
   openGraph: {
     type: "website",
     locale: "en_GB",
     url: SITE_URL,
     siteName: "PainGraphs",
-    title: "PainGraphs — a live market of consumer pain",
+    title: "PainGraphs — see what people are struggling with",
     description:
-      "Pain-first decision tools and a daily marketplace of structured consumer pains for affiliates and founders.",
-  },
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
-      index: true,
-      follow: true,
-    },
-  },
-  verification: {
-    google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || undefined,
+      "A live marketplace of problems, unmet demand, and commercial opportunities.",
   },
 };
 
@@ -70,14 +56,13 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} ${instrument.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-ink text-paper">
-        <PhaseBanner />
-        <Header />
+      <body className="flex min-h-full flex-col bg-ink text-paper">
+        <SiteHeader />
         <Suspense fallback={null}>
           <VisitTracker />
         </Suspense>
         {children}
-        <Footer />
+        <SiteFooter />
       </body>
       {gaId ? <GoogleAnalytics gaId={gaId} /> : null}
     </html>

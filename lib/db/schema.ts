@@ -326,6 +326,13 @@ export const hypothesisAnswers = sqliteTable(
   (table) => [index("hypothesis_answers_hyp_idx").on(table.hypothesisId)],
 );
 
+export const affiliateCodes = sqliteTable("affiliate_codes", {
+  userId: text("user_id")
+    .primaryKey()
+    .references(() => user.id, { onDelete: "cascade" }),
+  code: text("code").notNull().unique(),
+});
+
 export const affiliateOffers = sqliteTable(
   "affiliate_offers",
   {
@@ -509,7 +516,279 @@ export const billboardFavourites = sqliteTable(
   ],
 );
 
-export const userRelations = relations(user, ({ many }) => ({
+export const roles = sqliteTable("roles", {
+  id: text("id").primaryKey(),
+  slug: text("slug").notNull().unique(),
+  name: text("name").notNull(),
+});
+
+export const permissions = sqliteTable("permissions", {
+  id: text("id").primaryKey(),
+  slug: text("slug").notNull().unique(),
+  name: text("name").notNull(),
+});
+
+export const rolePermissions = sqliteTable(
+  "role_permissions",
+  {
+    roleId: text("role_id")
+      .notNull()
+      .references(() => roles.id, { onDelete: "cascade" }),
+    permissionId: text("permission_id")
+      .notNull()
+      .references(() => permissions.id, { onDelete: "cascade" }),
+  },
+  (table) => [
+    uniqueIndex("role_permissions_unique_idx").on(
+      table.roleId,
+      table.permissionId,
+    ),
+  ],
+);
+
+export const userRoles = sqliteTable(
+  "user_roles",
+  {
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    roleId: text("role_id")
+      .notNull()
+      .references(() => roles.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at"),
+  },
+  (table) => [
+    uniqueIndex("user_roles_unique_idx").on(table.userId, table.roleId),
+    index("user_roles_user_idx").on(table.userId),
+  ],
+);
+
+export const userProfiles = sqliteTable("user_profiles", {
+  userId: text("user_id")
+    .primaryKey()
+    .references(() => user.id, { onDelete: "cascade" }),
+  consumerEnabled: integer("consumer_enabled", { mode: "boolean" })
+    .$defaultFn(() => true)
+    .notNull(),
+  affiliateEnabled: integer("affiliate_enabled", { mode: "boolean" })
+    .$defaultFn(() => false)
+    .notNull(),
+  founderEnabled: integer("founder_enabled", { mode: "boolean" })
+    .$defaultFn(() => false)
+    .notNull(),
+  primaryMode: text("primary_mode").$defaultFn(() => "solve").notNull(),
+  plan: text("plan").$defaultFn(() => "free").notNull(),
+  stripeCustomerId: text("stripe_customer_id"),
+  stripeSubscriptionId: text("stripe_subscription_id"),
+  stripeSubscriptionStatus: text("stripe_subscription_status"),
+  stripeCancelAt: integer("stripe_cancel_at"),
+  createdAt: timestamp("created_at"),
+  updatedAt: timestamp("updated_at"),
+});
+
+export const auditLogs = sqliteTable(
+  "audit_logs",
+  {
+    id: text("id").primaryKey(),
+    actorUserId: text("actor_user_id").references(() => user.id, {
+      onDelete: "set null",
+    }),
+    action: text("action").notNull(),
+    entityType: text("entity_type"),
+    entityId: text("entity_id"),
+    metadata: text("metadata"),
+    createdAt: timestamp("created_at"),
+  },
+  (table) => [
+    index("audit_logs_actor_idx").on(table.actorUserId),
+    index("audit_logs_action_idx").on(table.action),
+  ],
+);
+
+export const affiliateDestinations = sqliteTable(
+  "affiliate_destinations",
+  {
+    id: text("id").primaryKey(),
+    painId: text("pain_id")
+      .notNull()
+      .references(() => pains.id, { onDelete: "cascade" }),
+    productId: text("product_id")
+      .notNull()
+      .references(() => products.id, { onDelete: "cascade" }),
+    url: text("url").notNull(),
+    country: text("country").notNull().default("*"),
+    createdAt: timestamp("created_at"),
+    updatedAt: timestamp("updated_at"),
+  },
+  (table) => [
+    uniqueIndex("affiliate_destinations_pain_product_country_idx").on(
+      table.painId,
+      table.productId,
+      table.country,
+    ),
+  ],
+);
+
+export const affiliateProgrammes = sqliteTable(
+  "affiliate_programmes",
+  {
+    id: text("id").primaryKey(),
+    productId: text("product_id")
+      .notNull()
+      .references(() => products.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    kind: text("kind").notNull(),
+    status: text("status").notNull(),
+    ownerStatus: text("owner_status"),
+    country: text("country"),
+    joinUrl: text("join_url"),
+    note: text("note").notNull(),
+    createdAt: timestamp("created_at"),
+    updatedAt: timestamp("updated_at"),
+  },
+  (table) => [index("affiliate_programmes_product_idx").on(table.productId)],
+);
+
+export const destinationClicks = sqliteTable(
+  "destination_clicks",
+  {
+    id: text("id").primaryKey(),
+    destinationId: text("destination_id")
+      .notNull()
+      .references(() => affiliateDestinations.id, { onDelete: "cascade" }),
+    painId: text("pain_id")
+      .notNull()
+      .references(() => pains.id, { onDelete: "cascade" }),
+    productId: text("product_id")
+      .notNull()
+      .references(() => products.id, { onDelete: "cascade" }),
+    country: text("country"),
+    visitorCountry: text("visitor_country"),
+    sourcePath: text("source_path"),
+    sessionId: text("session_id"),
+    createdAt: timestamp("created_at"),
+  },
+  (table) => [
+    index("destination_clicks_pain_idx").on(table.painId),
+    index("destination_clicks_destination_idx").on(table.destinationId),
+  ],
+);
+
+export const memberDestinations = sqliteTable(
+  "member_destinations",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    painId: text("pain_id")
+      .notNull()
+      .references(() => pains.id, { onDelete: "cascade" }),
+    productId: text("product_id")
+      .notNull()
+      .references(() => products.id, { onDelete: "cascade" }),
+    url: text("url").notNull(),
+    country: text("country").notNull().default("*"),
+    createdAt: timestamp("created_at"),
+    updatedAt: timestamp("updated_at"),
+  },
+  (table) => [
+    uniqueIndex("member_destinations_user_pain_product_country_idx").on(
+      table.userId,
+      table.painId,
+      table.productId,
+      table.country,
+    ),
+    index("member_destinations_user_idx").on(table.userId),
+  ],
+);
+
+export const dailyOpportunities = sqliteTable(
+  "daily_opportunities",
+  {
+    day: text("day").notNull(),
+    lens: text("lens").notNull(),
+    painId: text("pain_id")
+      .notNull()
+      .references(() => pains.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at"),
+  },
+  (table) => [
+    uniqueIndex("daily_opportunities_day_lens_idx").on(table.day, table.lens),
+    index("daily_opportunities_lens_idx").on(table.lens),
+  ],
+);
+
+export const alertPreferences = sqliteTable("alert_preferences", {
+  userId: text("user_id")
+    .primaryKey()
+    .references(() => user.id, { onDelete: "cascade" }),
+  emailSavedUpdates: integer("email_saved_updates", { mode: "boolean" })
+    .$defaultFn(() => false)
+    .notNull(),
+  emailOpportunity: integer("email_opportunity", { mode: "boolean" })
+    .$defaultFn(() => false)
+    .notNull(),
+  updatedAt: timestamp("updated_at"),
+});
+
+export const painWatchSnapshots = sqliteTable("pain_watch_snapshots", {
+  painId: text("pain_id")
+    .primaryKey()
+    .references(() => pains.id, { onDelete: "cascade" }),
+  evidenceCount: integer("evidence_count").notNull(),
+  destinationCount: integer("destination_count").notNull(),
+  productCount: integer("product_count").notNull(),
+  affiliateScore: real("affiliate_score").notNull(),
+  founderScore: real("founder_score").notNull(),
+  capturedAt: timestamp("captured_at"),
+});
+
+export const memberAlerts = sqliteTable(
+  "member_alerts",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    painId: text("pain_id").references(() => pains.id, { onDelete: "cascade" }),
+    kind: text("kind").notNull(),
+    title: text("title").notNull(),
+    body: text("body").notNull(),
+    href: text("href").notNull(),
+    day: text("day").notNull(),
+    readAt: integer("read_at", { mode: "timestamp_ms" }),
+    emailedAt: integer("emailed_at", { mode: "timestamp_ms" }),
+    createdAt: timestamp("created_at"),
+  },
+  (table) => [
+    uniqueIndex("member_alerts_user_kind_pain_day_idx").on(
+      table.userId,
+      table.kind,
+      table.painId,
+      table.day,
+    ),
+    index("member_alerts_user_idx").on(table.userId),
+  ],
+);
+
+export const painGraphScores = sqliteTable("pain_graph_scores", {
+  painId: text("pain_id")
+    .primaryKey()
+    .references(() => pains.id, { onDelete: "cascade" }),
+  demandScore: real("demand_score"),
+  growthScore: real("growth_score"),
+  buyingIntentScore: real("buying_intent_score"),
+  recurrenceScore: real("recurrence_score"),
+  dissatisfactionScore: real("dissatisfaction_score"),
+  reachabilityScore: real("reachability_score"),
+  founderScore: real("founder_score"),
+  paidAcquisitionScore: real("paid_acquisition_score"),
+  confidenceScore: real("confidence_score"),
+  updatedAt: timestamp("updated_at"),
+});
+
+export const userRelations = relations(user, ({ many, one }) => ({
   sessions: many(session),
   watchlists: many(watchlists),
   productScans: many(productScans),
@@ -518,6 +797,11 @@ export const userRelations = relations(user, ({ many }) => ({
   offerPainMatches: many(offerPainMatches),
   programmeLeads: many(programmeLeads),
   pageVisits: many(pageVisits),
+  roles: many(userRoles),
+  profile: one(userProfiles, {
+    fields: [user.id],
+    references: [userProfiles.userId],
+  }),
 }));
 
 export const categoryRelations = relations(categories, ({ many }) => ({

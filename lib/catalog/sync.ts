@@ -1,14 +1,19 @@
 import { and, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
+  affiliateProgrammes,
   categories,
   criteria,
   painClusters,
+  painGraphScores,
   painSignals,
   pains,
   productFits,
   products,
 } from "@/lib/db/schema";
+import { ensureIdentityTables } from "@/lib/identity/db";
+import { snapshotFromPain } from "@/lib/paingraph/scores";
+import { allowedJoinUrl, PROGRAMMES } from "@/lib/programmes/catalog";
 import { CATEGORIES, CLUSTERS, PAINS, PRODUCTS } from "./data";
 
 let ready: Promise<void> | null = null;
@@ -24,6 +29,7 @@ export async function ensureCatalog() {
 }
 
 async function writeCatalog() {
+  await ensureIdentityTables();
   for (const category of CATEGORIES) {
     await db
       .insert(categories)
@@ -60,6 +66,33 @@ async function writeCatalog() {
           whoFor: product.whoFor,
           searchQuery: product.searchQuery,
           priceBand: product.priceBand,
+        },
+      });
+  }
+
+  for (const programme of PROGRAMMES) {
+    const joinUrl = allowedJoinUrl(programme.joinUrl);
+    await db
+      .insert(affiliateProgrammes)
+      .values({
+        id: programme.id,
+        productId: programme.productId,
+        name: programme.name,
+        kind: programme.kind,
+        status: programme.status,
+        country: programme.country,
+        joinUrl,
+        note: programme.note,
+      })
+      .onConflictDoUpdate({
+        target: affiliateProgrammes.id,
+        set: {
+          name: programme.name,
+          kind: programme.kind,
+          status: programme.status,
+          country: programme.country,
+          joinUrl,
+          note: programme.note,
         },
       });
   }
@@ -106,6 +139,21 @@ async function writeCatalog() {
           affiliateScore: pain.affiliateScore,
           organicScore: pain.organicScore,
           sensitive: pain.sensitive,
+        },
+      });
+
+    const snapshot = snapshotFromPain(pain);
+    await db
+      .insert(painGraphScores)
+      .values(snapshot)
+      .onConflictDoUpdate({
+        target: painGraphScores.painId,
+        set: {
+          growthScore: snapshot.growthScore,
+          buyingIntentScore: snapshot.buyingIntentScore,
+          reachabilityScore: snapshot.reachabilityScore,
+          founderScore: snapshot.founderScore,
+          updatedAt: snapshot.updatedAt,
         },
       });
 

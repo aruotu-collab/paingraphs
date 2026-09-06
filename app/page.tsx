@@ -1,126 +1,111 @@
 import Link from "next/link";
-import { PainCard } from "@/components/pain-card";
-import { listMarketPains } from "@/lib/market/queries";
+import { OpportunityCard } from "@/components/opportunity-card";
+import { PainSearch } from "@/components/pain-search";
+import { todaysOpportunity } from "@/lib/opportunities/daily";
+import { founderGapFromPage } from "@/lib/opportunities/gap";
+import { getPainGraphPage, listPainGraphs } from "@/lib/paingraph/queries";
 
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const pains = await listMarketPains();
-  const trending = [...pains].sort((a, b) => b.trend - a.trend);
-
+  const graphs = await listPainGraphs();
+  const categories = [
+    ...new Map(
+      graphs.map((graph) => [graph.category.slug, graph.category]),
+    ).values(),
+  ];
+  const [affiliateDay, founderDay] = await Promise.all([
+    todaysOpportunity("affiliate", graphs),
+    todaysOpportunity("founder", graphs),
+  ]);
+  const founderPage = founderDay
+    ? await getPainGraphPage(
+        founderDay.category.slug,
+        founderDay.subcategory.slug,
+        founderDay.slug,
+      )
+    : null;
+  const founderGap = founderPage ? founderGapFromPage(founderPage) : null;
   return (
-    <main className="mx-auto w-full max-w-6xl flex-1 px-5 py-10">
-      <p className="text-xs uppercase tracking-[0.22em] text-copper">
-        Pain market
+    <main className="mx-auto w-full max-w-6xl flex-1 px-5 py-12">
+      <p className="text-xs uppercase tracking-[0.18em] text-copper">
+        One PainGraph · five lenses
       </p>
-      <h1 className="mt-3 font-display text-5xl leading-[1.05] sm:text-6xl">
-        A live exchange of consumer pain.
+      <h1 className="mt-3 max-w-3xl font-display text-5xl leading-tight">
+        See what people are struggling with — and what to do about it.
       </h1>
       <p className="mt-5 max-w-2xl text-lg leading-8 text-muted">
-        Shoppers get a decision tool. Affiliates and founders use the same
-        published pains. The Billboard is a separate daily chart of topics still
-        being researched.
+        PainGraphs is a live marketplace of problems. Consumers find what
+        usually helps. Affiliates promote existing solutions. Founders find
+        gaps worth building.
       </p>
 
       <div className="mt-10 grid gap-4 md:grid-cols-3">
-        <Door
-          kicker="Solve a problem"
-          title="Find my PainGraph"
-          body="Find products matched to what is bothering you."
-          href={trending[0]?.href ?? "/electronics/headphones/glasses-pressure"}
-          cta="Find my PainGraph"
-        />
-        <Door
-          kicker="Earn from problems"
-          title="Explore affiliate opportunities"
-          body="Discover pains people are already trying to solve, and products you can promote."
-          href="/for-affiliates"
-          cta="Explore affiliate opportunities"
-        />
-        <Door
-          kicker="Build solutions"
-          title="Explore founder opportunities"
-          body="Find underserved markets, or discover new audiences for a product you already sell."
-          href="/for-founders"
-          cta="Explore founder opportunities"
-        />
-      </div>
-
-      <dl className="mt-10 grid gap-px bg-line sm:grid-cols-3">
-        <Tile label="Published pains" value={String(pains.length)} />
-        <Tile label="Updated" value="today" />
-        <Tile
-          label="Hottest move"
-          value={trending[0] ? `+${trending[0].trend}%` : "—"}
-        />
-      </dl>
-
-      <p className="mt-8 text-sm text-muted">
-        Looking for today&apos;s search topics, not live shopper pages?{" "}
-        <Link href="/billboard" className="text-copper hover:text-copper-2">
-          Open the Painpoint Billboard
+        <Link href="/" className="border border-line p-5 hover:border-copper">
+          <p className="text-xs uppercase tracking-[0.16em] text-copper">Solve</p>
+          <h2 className="mt-2 font-display text-2xl">Solve a pain</h2>
+          <p className="mt-3 text-sm leading-6 text-muted">
+            Find products, services, and approaches that may help.
+          </p>
         </Link>
-        .
-      </p>
-
-      <Section title="Live marketplace" items={trending} extra />
-    </main>
-  );
-}
-
-function Door({
-  kicker,
-  title,
-  body,
-  href,
-  cta,
-}: {
-  kicker: string;
-  title: string;
-  body: string;
-  href: string;
-  cta: string;
-}) {
-  return (
-    <Link
-      href={href}
-      className="flex flex-col border border-line p-5 transition-colors hover:border-copper"
-    >
-      <p className="text-xs uppercase tracking-[0.16em] text-copper">{kicker}</p>
-      <h2 className="mt-3 font-display text-2xl">{title}</h2>
-      <p className="mt-3 flex-1 text-sm leading-6 text-muted">{body}</p>
-      <span className="mt-5 text-sm text-paper">{cta} →</span>
-    </Link>
-  );
-}
-
-function Tile({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="bg-ink px-5 py-6">
-      <dt className="text-xs uppercase tracking-[0.16em] text-muted">{label}</dt>
-      <dd className="mt-2 font-display text-3xl">{value}</dd>
-    </div>
-  );
-}
-
-function Section({
-  title,
-  items,
-  extra,
-}: {
-  title: string;
-  items: Awaited<ReturnType<typeof listMarketPains>>;
-  extra?: boolean;
-}) {
-  if (items.length === 0) return null;
-  return (
-    <section className="mt-14">
-      <h2 className="font-display text-3xl">{title}</h2>
-      <div className="mt-6 grid gap-4">
-        {items.map((pain) => (
-          <PainCard key={pain.id} pain={pain} extra={extra} />
-        ))}
+        <Link href="/affiliates" className="border border-line p-5 hover:border-copper">
+          <p className="text-xs uppercase tracking-[0.16em] text-copper">Promote</p>
+          <h2 className="mt-2 font-display text-2xl">Promote a solution</h2>
+          <p className="mt-3 text-sm leading-6 text-muted">
+            Find pain-driven affiliate opportunities backed by observed demand.
+          </p>
+        </Link>
+        <Link href="/founders" className="border border-line p-5 hover:border-copper">
+          <p className="text-xs uppercase tracking-[0.16em] text-copper">Build</p>
+          <h2 className="mt-2 font-display text-2xl">Build a solution</h2>
+          <p className="mt-3 text-sm leading-6 text-muted">
+            Find underserved pains that may be worth building for.
+          </p>
+        </Link>
       </div>
-    </section>
+
+      {affiliateDay || founderDay ? (
+        <section className="mt-16 grid gap-4 md:grid-cols-2">
+          {affiliateDay ? (
+            <OpportunityCard graph={affiliateDay} lens="affiliate" />
+          ) : null}
+          {founderDay ? (
+            <OpportunityCard
+              graph={founderDay}
+              lens="founder"
+              gap={founderGap?.unmetNeed}
+              href={`/founders/gap/${founderDay.id}`}
+            />
+          ) : null}
+        </section>
+      ) : null}
+
+      <section className="mt-16">
+        <h2 className="font-display text-3xl">Explore by category</h2>
+        <div className="mt-5 flex flex-wrap gap-2">
+          {categories.map((category) => (
+            <Link
+              key={category.slug}
+              href={`/${category.slug}`}
+              className="border border-line px-3 py-1.5 text-sm text-muted hover:border-copper hover:text-copper"
+            >
+              {category.name}
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      <section className="mt-16">
+        <div className="flex items-end justify-between gap-4">
+          <h2 className="font-display text-3xl">Live PainGraphs</h2>
+          <Link href="/top-pains" className="text-sm text-copper hover:text-copper-2">
+            Open Billboard
+          </Link>
+        </div>
+        <div className="mt-6">
+          <PainSearch graphs={graphs} />
+        </div>
+      </section>
+    </main>
   );
 }
