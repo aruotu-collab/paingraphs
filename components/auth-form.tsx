@@ -3,6 +3,7 @@
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { existingAccountFor, requestMagicLink } from "@/lib/auth/actions";
 import { authClient } from "@/lib/auth-client";
 
 function withSignupLenses(next: string, form: FormData) {
@@ -57,15 +58,15 @@ export function AuthForm({
     const email = String(form.get("email") || "").trim().toLowerCase();
     const name = String(form.get("name") || email.split("@")[0] || "there");
     const callbackURL = withSignupLenses(next, form);
-    const result = await authClient.signIn.magicLink({
+    const result = await requestMagicLink({
+      mode,
       email,
       name,
       callbackURL,
-      newUserCallbackURL: callbackURL,
     });
     setPending(false);
     if (result.error) {
-      setError(result.error.message || "Could not send the sign-in link.");
+      setError(result.error);
       return;
     }
     setStatus(`Check ${email}. Click the link and you will come back signed in.`);
@@ -78,8 +79,13 @@ export function AuthForm({
     setPending(true);
     const form = new FormData(event.currentTarget);
     const name = String(form.get("name") || "");
-    const email = String(form.get("email") || "");
+    const email = String(form.get("email") || "").trim().toLowerCase();
     const password = String(form.get("password") || "");
+    if (mode === "login" && !(await existingAccountFor(email))) {
+      setPending(false);
+      setError("No PainGraphs account for this email. Use Get started first.");
+      return;
+    }
     const result =
       mode === "signup"
         ? await authClient.signUp.email({ name, email, password })
