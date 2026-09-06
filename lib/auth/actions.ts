@@ -28,9 +28,7 @@ export async function requestMagicLink(input: {
 
   const existing = await findUserByEmail(email);
   if (input.mode === "login" && !existing) {
-    return {
-      error: "No PainGraphs account for this email. Use Get started first.",
-    };
+    return { error: "no-account" };
   }
 
   try {

@@ -83,7 +83,7 @@ export function AuthForm({
     const password = String(form.get("password") || "");
     if (mode === "login" && !(await existingAccountFor(email))) {
       setPending(false);
-      setError("No PainGraphs account for this email. Use Get started first.");
+      setError("no-account");
       return;
     }
     const result =
@@ -123,7 +123,24 @@ export function AuthForm({
           />
         </label>
         {mode === "signup" ? <SignupLenses /> : null}
-        {error ? <p className="text-sm text-red-400">{error}</p> : null}
+        {error ? (
+          <p className="text-sm text-red-400">
+            {error === "no-account" ? (
+              <>
+                No PainGraphs account for this email.{" "}
+                <Link
+                  href={`/signup?next=${encodeURIComponent(next)}`}
+                  className="underline hover:text-copper-2"
+                >
+                  Get started
+                </Link>{" "}
+                first.
+              </>
+            ) : (
+              error
+            )}
+          </p>
+        ) : null}
         {status ? <p className="text-sm text-signal">{status}</p> : null}
         <button
           type="submit"
