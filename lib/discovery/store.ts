@@ -1,0 +1,466 @@
+import { desc, eq, inArray } from "drizzle-orm";
+import { CATEGORIES, CLUSTERS } from "@/lib/catalog/data";
+import { db } from "@/lib/db";
+import {
+  discoverySignals,
+  discoverySources,
+  ingestRuns,
+  painCandidateSignals,
+  painCandidates,
+  painSignals,
+  pains,
+} from "@/lib/db/schema";
+import { writeAuditLog } from "@/lib/identity/audit";
+import { overlapScore, slugify } from "./text";
+import { ensureDiscoveryTables } from "./db";
+
+export const CANDIDATE_STATUSES = [
+  "new",
+  "watch",
+  "needs_evidence",
+  "approved",
+  "rejected",
+  "merged",
+] as const;
+export type CandidateStatus = (typeof CANDIDATE_STATUSES)[number];
+
+export const SOURCE_TYPES = [
+  "manual",
+  "catalog",
+  "forum",
+  "review",
+  "search",
+  "licensed",
+  "partner",
+] as const;
+
+export const ACCESS_METHODS = ["manual", "api", "feed", "crawler", "partner"] as const;
+export const COMMERCIAL_USE = ["permitted", "unknown", "forbidden"] as const;
+
+const SEED_SOURCES = [
+  {
+    id: "src-owner-manual",
+    name: "Owner submissions",
+    sourceType: "manual",
+    accessMethod: "manual",
+    commercialUse: "permitted",
+    termsNotes: "Owner-pasted public quotes and first-party notes.",
+    attribution: "Quoted with source label on the PainGraph.",
+    retention: "Keep while the candidate or PainGraph is live.",
+    rateLimit: "None",
+    qualityScore: 80,
+    trustScore: 90,
+  },
+  {
+    id: "src-catalog-review",
+    name: "Catalog review",
+    sourceType: "catalog",
+    accessMethod: "manual",
+    commercialUse: "permitted",
+    termsNotes: "Internal curated catalog. No live web crawl.",
+    attribution: "PainGraphs catalog",
+    retention: "Indefinite",
+    rateLimit: "Daily score and rank jobs only.",
+    qualityScore: 70,
+    trustScore: 85,
+  },
+] as const;
+
+export async function seedDiscoverySources() {
+  await ensureDiscoveryTables();
+  const now = new Date();
+  for (const source of SEED_SOURCES) {
+    await db
+      .insert(discoverySources)
+      .values({
+        ...source,
+        frequencyHours: 24,
+        enabled: true,
+        createdAt: now,
+        updatedAt: now,
+      })
+      .onConflictDoUpdate({
+        target: discoverySources.id,
+        set: {
+          name: source.name,
+          sourceType: source.sourceType,
+          accessMethod: source.accessMethod,
+          commercialUse: source.commercialUse,
+          termsNotes: source.termsNotes,
+          attribution: source.attribution,
+          retention: source.retention,
+          rateLimit: source.rateLimit,
+        },
+      });
+  }
+}
+
+export async function listDiscoverySources() {
+  await seedDiscoverySources();
+  return db.select().from(discoverySources).orderBy(discoverySources.name);
+}
+
+export async function getDiscoverySource(id: string) {
+  await ensureDiscoveryTables();
+  const [row] = await db
+    .select()
+    .from(discoverySources)
+    .where(eq(discoverySources.id, id))
+    .limit(1);
+  return row ?? null;
+}
+
+export async function upsertDiscoverySource(input: {
+  id?: string;
+  name: string;
+  sourceType: string;
+  accessMethod: string;
+  commercialUse: string;
+  termsNotes?: string | null;
+  attribution?: string | null;
+  retention?: string | null;
+  rateLimit?: string | null;
+  enabled: boolean;
+}) {
+  await ensureDiscoveryTables();
+  const now = new Date();
+  const id = input.id || `src-${slugify(input.name)}-${crypto.randomUUID().slice(0, 8)}`;
+  const existing = await getDiscoverySource(id);
+  if (existing) {
+    await db
+      .update(discoverySources)
+      .set({
+        name: input.name,
+        sourceType: input.sourceType,
+        accessMethod: input.accessMethod,
+        commercialUse: input.commercialUse,
+        termsNotes: input.termsNotes ?? null,
+        attribution: input.attribution ?? null,
+        retention: input.retention ?? null,
+        rateLimit: input.rateLimit ?? null,
+        enabled: input.enabled,
+        updatedAt: now,
+      })
+      .where(eq(discoverySources.id, id));
+    return id;
+  }
+  await db.insert(discoverySources).values({
+    id,
+    name: input.name,
+    sourceType: input.sourceType,
+    accessMethod: input.accessMethod,
+    commercialUse: input.commercialUse,
+    termsNotes: input.termsNotes ?? null,
+    attribution: input.attribution ?? null,
+    retention: input.retention ?? null,
+    rateLimit: input.rateLimit ?? null,
+    frequencyHours: 24,
+    enabled: input.enabled,
+    createdAt: now,
+    updatedAt: now,
+  });
+  return id;
+}
+
+export async function markSourceIngested(id: string) {
+  await ensureDiscoveryTables();
+  await db
+    .update(discoverySources)
+    .set({ lastIngestedAt: new Date(), updatedAt: new Date() })
+    .where(eq(discoverySources.id, id));
+}
+
+export async function addDiscoverySignal(input: {
+  sourceId: string;
+  rawText: string;
+  sourceUrl?: string | null;
+  persona?: string | null;
+  geography?: string | null;
+}) {
+  await seedDiscoverySources();
+  const id = crypto.randomUUID();
+  await db.insert(discoverySignals).values({
+    id,
+    sourceId: input.sourceId,
+    rawText: input.rawText,
+    sourceUrl: input.sourceUrl ?? null,
+    persona: input.persona ?? null,
+    geography: input.geography ?? null,
+    status: "new",
+    createdAt: new Date(),
+  });
+  return id;
+}
+
+export async function listDiscoverySignals(limit = 80) {
+  await ensureDiscoveryTables();
+  return db
+    .select()
+    .from(discoverySignals)
+    .orderBy(desc(discoverySignals.createdAt))
+    .limit(limit);
+}
+
+export async function listPendingSignals() {
+  await ensureDiscoveryTables();
+  return db
+    .select()
+    .from(discoverySignals)
+    .where(eq(discoverySignals.status, "new"));
+}
+
+export async function listCandidates(status?: CandidateStatus) {
+  await ensureDiscoveryTables();
+  const rows = status
+    ? await db
+        .select()
+        .from(painCandidates)
+        .where(eq(painCandidates.status, status))
+        .orderBy(desc(painCandidates.createdAt))
+    : await db.select().from(painCandidates).orderBy(desc(painCandidates.createdAt));
+  return rows;
+}
+
+export async function candidateCounts() {
+  await ensureDiscoveryTables();
+  const rows = await db.select({ status: painCandidates.status }).from(painCandidates);
+  const counts = new Map<string, number>();
+  for (const row of rows) {
+    counts.set(row.status, (counts.get(row.status) ?? 0) + 1);
+  }
+  return {
+    all: rows.length,
+    queue: rows.filter((row) =>
+      ["new", "watch", "needs_evidence"].includes(row.status),
+    ).length,
+    counts,
+  };
+}
+
+export async function getCandidate(id: string) {
+  await ensureDiscoveryTables();
+  const [row] = await db
+    .select()
+    .from(painCandidates)
+    .where(eq(painCandidates.id, id))
+    .limit(1);
+  if (!row) return null;
+  const signals = await db
+    .select()
+    .from(painCandidateSignals)
+    .where(eq(painCandidateSignals.candidateId, id));
+  return { ...row, signals };
+}
+
+export async function createCandidate(input: {
+  title: string;
+  problem: string;
+  persona?: string | null;
+  categorySlug?: string | null;
+  clusterSlug?: string | null;
+  countries?: string | null;
+  productsDetected?: string | null;
+  sourceTypes?: string | null;
+  confidence?: number | null;
+  buyingIntent?: number | null;
+  severity?: number | null;
+  founderOpportunity?: number | null;
+  affiliateOpportunity?: number | null;
+  relatedPainId?: string | null;
+  origin?: string;
+  sourceId?: string | null;
+  quote?: string | null;
+  quoteLabel?: string | null;
+  quoteUrl?: string | null;
+  actorUserId?: string | null;
+}) {
+  await seedDiscoverySources();
+  const now = new Date();
+  const id = crypto.randomUUID();
+  const quote = input.quote?.trim();
+  await db.insert(painCandidates).values({
+    id,
+    title: input.title,
+    problem: input.problem,
+    persona: input.persona ?? null,
+    categorySlug: input.categorySlug ?? null,
+    clusterSlug: input.clusterSlug ?? null,
+    countries: input.countries ?? null,
+    productsDetected: input.productsDetected ?? null,
+    evidenceCount: quote ? 1 : 0,
+    sourceTypes: input.sourceTypes ?? input.origin ?? "manual",
+    confidence: input.confidence ?? null,
+    buyingIntent: input.buyingIntent ?? null,
+    severity: input.severity ?? null,
+    founderOpportunity: input.founderOpportunity ?? null,
+    affiliateOpportunity: input.affiliateOpportunity ?? null,
+    relatedPainId: input.relatedPainId ?? null,
+    status: "new",
+    origin: input.origin ?? "manual",
+    sourceId: input.sourceId ?? "src-owner-manual",
+    createdAt: now,
+    updatedAt: now,
+  });
+  if (quote) {
+    await db.insert(painCandidateSignals).values({
+      id: crypto.randomUUID(),
+      candidateId: id,
+      rawQuote: quote,
+      sourceKind: "manual",
+      sourceLabel: input.quoteLabel || "Owner note",
+      sourceUrl: input.quoteUrl ?? null,
+      createdAt: now,
+    });
+  }
+  await writeAuditLog({
+    actorUserId: input.actorUserId,
+    action: "candidate_created",
+    entityType: "pain_candidate",
+    entityId: id,
+    metadata: { title: input.title, origin: input.origin ?? "manual" },
+  });
+  return id;
+}
+
+export async function setCandidateStatus(input: {
+  id: string;
+  status: CandidateStatus;
+  reviewNote?: string | null;
+  relatedPainId?: string | null;
+  painId?: string | null;
+  actorUserId?: string | null;
+}) {
+  await ensureDiscoveryTables();
+  if (!CANDIDATE_STATUSES.includes(input.status)) {
+    return { error: "Invalid candidate status." };
+  }
+  const [row] = await db
+    .select()
+    .from(painCandidates)
+    .where(eq(painCandidates.id, input.id))
+    .limit(1);
+  if (!row) return { error: "Candidate not found." };
+  await db
+    .update(painCandidates)
+    .set({
+      status: input.status,
+      reviewNote: input.reviewNote ?? row.reviewNote,
+      relatedPainId: input.relatedPainId ?? row.relatedPainId,
+      painId: input.painId ?? row.painId,
+      reviewedAt: new Date(),
+      updatedAt: new Date(),
+    })
+    .where(eq(painCandidates.id, input.id));
+  await writeAuditLog({
+    actorUserId: input.actorUserId,
+    action: `candidate_${input.status}`,
+    entityType: "pain_candidate",
+    entityId: input.id,
+    metadata: { from: row.status, to: input.status },
+  });
+  return { ok: true };
+}
+
+export function clusterOptions() {
+  return CLUSTERS.map((cluster) => {
+    const category = CATEGORIES.find((item) => item.id === cluster.categoryId);
+    return {
+      id: cluster.id,
+      slug: cluster.slug,
+      name: cluster.name,
+      categorySlug: category?.slug ?? "",
+      categoryName: category?.name ?? "",
+      label: `${category?.name ?? "Category"} / ${cluster.name}`,
+    };
+  });
+}
+
+export async function uniquePainSlug(clusterId: string, title: string) {
+  const base = slugify(title);
+  const existing = await db
+    .select({ slug: pains.slug })
+    .from(pains)
+    .where(eq(pains.clusterId, clusterId));
+  const taken = new Set(existing.map((row) => row.slug));
+  if (!taken.has(base)) return base;
+  let index = 2;
+  while (taken.has(`${base}-${index}`)) index += 1;
+  return `${base}-${index}`;
+}
+
+export async function attachSignalsToPain(candidateId: string, painId: string) {
+  const signals = await db
+    .select()
+    .from(painCandidateSignals)
+    .where(eq(painCandidateSignals.candidateId, candidateId));
+  for (const signal of signals) {
+    await db.insert(painSignals).values({
+      id: crypto.randomUUID(),
+      painId,
+      rawQuote: signal.rawQuote,
+      sourceKind: signal.sourceKind,
+      sourceLabel: signal.sourceLabel,
+      sourceUrl: signal.sourceUrl,
+      publishedAt: null,
+    });
+  }
+  return signals.length;
+}
+
+export async function markSignals(
+  ids: string[],
+  patch: {
+    status: string;
+    matchedPainId?: string | null;
+    candidateId?: string | null;
+    confidence?: number | null;
+  },
+) {
+  if (ids.length === 0) return;
+  await db
+    .update(discoverySignals)
+    .set(patch)
+    .where(inArray(discoverySignals.id, ids));
+}
+
+export async function latestIngestRun() {
+  await ensureDiscoveryTables();
+  const [row] = await db
+    .select()
+    .from(ingestRuns)
+    .orderBy(desc(ingestRuns.startedAt))
+    .limit(1);
+  return row ?? null;
+}
+
+export async function recordIngestRun(input: {
+  ok: boolean;
+  summary: Record<string, unknown>;
+  startedAt: Date;
+}) {
+  await ensureDiscoveryTables();
+  await db.insert(ingestRuns).values({
+    id: crypto.randomUUID(),
+    ok: input.ok,
+    summary: JSON.stringify(input.summary),
+    startedAt: input.startedAt,
+    finishedAt: new Date(),
+  });
+}
+
+export function titleMatchesExisting(
+  title: string,
+  problem: string,
+  graphs: { id: string; title: string; summary: string }[],
+) {
+  let best: { id: string; score: number } | null = null;
+  for (const graph of graphs) {
+    const score = Math.max(
+      overlapScore(title, graph.title),
+      overlapScore(`${title} ${problem}`, `${graph.title} ${graph.summary}`),
+    );
+    if (!best || score > best.score) best = { id: graph.id, score };
+  }
+  return best && best.score >= 0.42 ? best : null;
+}
+

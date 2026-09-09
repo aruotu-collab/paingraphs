@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { listPainTraffic } from "@/lib/admin/events";
 import { clickCounts, destinationCounts } from "@/lib/destinations/store";
 import { listAllPainGraphs } from "@/lib/paingraph/queries";
 import { nextMonetisationAction, programmeCounts } from "@/lib/programmes/store";
@@ -6,12 +7,14 @@ import { nextMonetisationAction, programmeCounts } from "@/lib/programmes/store"
 export const dynamic = "force-dynamic";
 
 export default async function MarketingAgentPage() {
-  const [graphs, destinations, programmes, clicks] = await Promise.all([
+  const [graphs, destinations, programmes, clicks, traffic] = await Promise.all([
     listAllPainGraphs(),
     destinationCounts(),
     programmeCounts(),
     clickCounts(),
+    listPainTraffic(),
   ]);
+  const visits = new Map(traffic.map((row) => [row.id, row.visits]));
   const board = [...graphs].sort((a, b) => b.scores.affiliate - a.scores.affiliate);
 
   return (
@@ -32,6 +35,7 @@ export default async function MarketingAgentPage() {
               <th className="py-2 pr-3">Intent</th>
               <th className="py-2 pr-3">Affiliate</th>
               <th className="py-2 pr-3">Founder</th>
+              <th className="py-2 pr-3">Visits</th>
               <th className="py-2 pr-3">Programmes</th>
               <th className="py-2 pr-3">Destinations</th>
               <th className="py-2 pr-3">Clicks</th>
@@ -62,6 +66,7 @@ export default async function MarketingAgentPage() {
                   <td className="py-3 pr-3 font-mono">
                     {Math.round(graph.scores.founder)}
                   </td>
+                  <td className="py-3 pr-3 font-mono">{visits.get(graph.id) ?? 0}</td>
                   <td className="py-3 pr-3 font-mono">{programmeCount}</td>
                   <td className="py-3 pr-3 font-mono">{destCount}</td>
                   <td className="py-3 pr-3 font-mono">{clickCount}</td>

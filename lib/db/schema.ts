@@ -788,6 +788,140 @@ export const painGraphScores = sqliteTable("pain_graph_scores", {
   updatedAt: timestamp("updated_at"),
 });
 
+export const discoverySources = sqliteTable("discovery_sources", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  sourceType: text("source_type").notNull(),
+  accessMethod: text("access_method").notNull(),
+  commercialUse: text("commercial_use").notNull(),
+  termsNotes: text("terms_notes"),
+  attribution: text("attribution"),
+  retention: text("retention"),
+  rateLimit: text("rate_limit"),
+  frequencyHours: integer("frequency_hours").$defaultFn(() => 24).notNull(),
+  qualityScore: real("quality_score"),
+  trustScore: real("trust_score"),
+  enabled: integer("enabled", { mode: "boolean" })
+    .$defaultFn(() => true)
+    .notNull(),
+  lastIngestedAt: integer("last_ingested_at", { mode: "timestamp_ms" }),
+  createdAt: timestamp("created_at"),
+  updatedAt: timestamp("updated_at"),
+});
+
+export const discoverySignals = sqliteTable(
+  "discovery_signals",
+  {
+    id: text("id").primaryKey(),
+    sourceId: text("source_id")
+      .notNull()
+      .references(() => discoverySources.id, { onDelete: "cascade" }),
+    rawText: text("raw_text").notNull(),
+    sourceUrl: text("source_url"),
+    persona: text("persona"),
+    geography: text("geography"),
+    status: text("status").$defaultFn(() => "new").notNull(),
+    matchedPainId: text("matched_pain_id").references(() => pains.id, {
+      onDelete: "set null",
+    }),
+    candidateId: text("candidate_id"),
+    confidence: real("confidence"),
+    createdAt: timestamp("created_at"),
+  },
+  (table) => [
+    index("discovery_signals_status_idx").on(table.status),
+    index("discovery_signals_source_idx").on(table.sourceId),
+  ],
+);
+
+export const painCandidates = sqliteTable(
+  "pain_candidates",
+  {
+    id: text("id").primaryKey(),
+    title: text("title").notNull(),
+    problem: text("problem").notNull(),
+    persona: text("persona"),
+    categorySlug: text("category_slug"),
+    clusterSlug: text("cluster_slug"),
+    countries: text("countries"),
+    productsDetected: text("products_detected"),
+    evidenceCount: integer("evidence_count").$defaultFn(() => 0).notNull(),
+    sourceTypes: text("source_types"),
+    confidence: real("confidence"),
+    buyingIntent: real("buying_intent"),
+    severity: real("severity"),
+    founderOpportunity: real("founder_opportunity"),
+    affiliateOpportunity: real("affiliate_opportunity"),
+    relatedPainId: text("related_pain_id").references(() => pains.id, {
+      onDelete: "set null",
+    }),
+    status: text("status").$defaultFn(() => "new").notNull(),
+    origin: text("origin").$defaultFn(() => "manual").notNull(),
+    sourceId: text("source_id").references(() => discoverySources.id, {
+      onDelete: "set null",
+    }),
+    painId: text("pain_id").references(() => pains.id, { onDelete: "set null" }),
+    reviewNote: text("review_note"),
+    createdAt: timestamp("created_at"),
+    updatedAt: timestamp("updated_at"),
+    reviewedAt: integer("reviewed_at", { mode: "timestamp_ms" }),
+  },
+  (table) => [
+    index("pain_candidates_status_idx").on(table.status),
+    index("pain_candidates_origin_idx").on(table.origin),
+  ],
+);
+
+export const painCandidateSignals = sqliteTable(
+  "pain_candidate_signals",
+  {
+    id: text("id").primaryKey(),
+    candidateId: text("candidate_id")
+      .notNull()
+      .references(() => painCandidates.id, { onDelete: "cascade" }),
+    rawQuote: text("raw_quote").notNull(),
+    sourceKind: text("source_kind").notNull(),
+    sourceLabel: text("source_label").notNull(),
+    sourceUrl: text("source_url"),
+    createdAt: timestamp("created_at"),
+  },
+  (table) => [index("pain_candidate_signals_candidate_idx").on(table.candidateId)],
+);
+
+export const painRankSnapshots = sqliteTable(
+  "pain_rank_snapshots",
+  {
+    day: text("day").notNull(),
+    view: text("view").notNull(),
+    painId: text("pain_id")
+      .notNull()
+      .references(() => pains.id, { onDelete: "cascade" }),
+    rank: integer("rank").notNull(),
+    score: real("score").notNull(),
+    createdAt: timestamp("created_at"),
+  },
+  (table) => [
+    uniqueIndex("pain_rank_snapshots_day_view_pain_idx").on(
+      table.day,
+      table.view,
+      table.painId,
+    ),
+    index("pain_rank_snapshots_day_view_idx").on(table.day, table.view),
+  ],
+);
+
+export const ingestRuns = sqliteTable(
+  "ingest_runs",
+  {
+    id: text("id").primaryKey(),
+    ok: integer("ok", { mode: "boolean" }).$defaultFn(() => true).notNull(),
+    summary: text("summary").notNull(),
+    startedAt: timestamp("started_at"),
+    finishedAt: timestamp("finished_at"),
+  },
+  (table) => [index("ingest_runs_started_idx").on(table.startedAt)],
+);
+
 export const userRelations = relations(user, ({ many, one }) => ({
   sessions: many(session),
   watchlists: many(watchlists),

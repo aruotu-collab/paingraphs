@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { runSavedPainAlerts } from "@/lib/alerts/run";
+import { runDiscoveryIngest } from "@/lib/discovery/ingest";
 
 export const dynamic = "force-dynamic";
 
@@ -9,10 +9,12 @@ export async function GET(request: Request) {
   if (secret && auth !== `Bearer ${secret}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  const alerts = await runSavedPainAlerts();
-  return NextResponse.json({
-    ok: true,
-    alerts,
-    reason: "Saved-pain alerts and daily opportunities. The old discovery pipeline stays removed.",
-  });
+  try {
+    const ingest = await runDiscoveryIngest();
+    return NextResponse.json({ ok: true, ingest });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Ingest failed.";
+    console.error("Ingest failed:", error);
+    return NextResponse.json({ ok: false, error: message }, { status: 500 });
+  }
 }

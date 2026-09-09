@@ -94,6 +94,8 @@ export async function updateUserProfile(
   return (await getUserProfile(userId))!;
 }
 
+export const FREE_SAVE_LIMIT = 5;
+
 export function entitlements(profile: UserProfile, owner: boolean) {
   const pro = owner || profile.plan === "pro" || profile.plan === "business";
   return {
@@ -102,6 +104,7 @@ export function entitlements(profile: UserProfile, owner: boolean) {
     canBrowsePains: true,
     canUseSliders: true,
     canSavePains: true,
+    saveLimit: pro ? null : FREE_SAVE_LIMIT,
     canSeeAffiliateDepth: pro,
     canSeeFounderDepth: pro,
     canUseMarketingAgent: owner,

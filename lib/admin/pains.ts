@@ -34,6 +34,7 @@ export async function setPainPublication(painId: string, status: PainStatus) {
   });
 
   revalidatePath("/admin");
+  revalidatePath("/admin/pains");
   revalidatePath("/");
   revalidatePath("/top-pains");
   return { ok: true };
