@@ -1,5 +1,4 @@
 import { desc, eq, inArray } from "drizzle-orm";
-import { CATEGORIES, CLUSTERS } from "@/lib/catalog/data";
 import { db } from "@/lib/db";
 import {
   discoverySignals,
@@ -65,6 +64,53 @@ const SEED_SOURCES = [
     qualityScore: 70,
     trustScore: 85,
   },
+  {
+    id: "src-hn-ask",
+    name: "Hacker News Ask HN",
+    sourceType: "forum",
+    accessMethod: "api",
+    commercialUse: "permitted",
+    termsNotes:
+      "Public Algolia HN Search API. Attribute Hacker News. No crawl of news.ycombinator.com.",
+    attribution: "Hacker News",
+    retention: "Keep quotes while the candidate or PainGraph is live.",
+    rateLimit: "Once per 24 hours, 20 items.",
+    feedUrl:
+      "https://hn.algolia.com/api/v1/search_by_date?tags=ask_hn&hitsPerPage=20",
+    qualityScore: 62,
+    trustScore: 70,
+  },
+  {
+    id: "src-se-softwarerecs",
+    name: "Software Recommendations Stack Exchange",
+    sourceType: "licensed",
+    accessMethod: "api",
+    commercialUse: "permitted",
+    termsNotes:
+      "Official Stack Exchange API. User content is CC BY-SA. Attribute the site and link the question.",
+    attribution: "Software Recommendations Stack Exchange",
+    retention: "Keep quotes while the candidate or PainGraph is live.",
+    rateLimit: "Once per 24 hours, 20 items. Unauthenticated quota.",
+    feedUrl:
+      "https://api.stackexchange.com/2.3/questions?order=desc&sort=activity&site=softwarerecs&pagesize=20&filter=withbody",
+    qualityScore: 68,
+    trustScore: 80,
+  },
+  {
+    id: "src-cpsc-recalls",
+    name: "U.S. CPSC product recalls",
+    sourceType: "licensed",
+    accessMethod: "feed",
+    commercialUse: "permitted",
+    termsNotes:
+      "Official CPSC RSS. U.S. government work. Public safety notices, not a web crawl.",
+    attribution: "U.S. Consumer Product Safety Commission",
+    retention: "Keep while the candidate or PainGraph is live.",
+    rateLimit: "Once per 24 hours, 25 items.",
+    feedUrl: "https://www.cpsc.gov/Newsroom/CPSC-RSS-Feed/Recalls-RSS",
+    qualityScore: 75,
+    trustScore: 90,
+  },
 ] as const;
 
 export async function seedDiscoverySources() {
@@ -75,6 +121,7 @@ export async function seedDiscoverySources() {
       .insert(discoverySources)
       .values({
         ...source,
+        feedUrl: "feedUrl" in source ? source.feedUrl : null,
         frequencyHours: 24,
         enabled: true,
         createdAt: now,
@@ -91,6 +138,7 @@ export async function seedDiscoverySources() {
           attribution: source.attribution,
           retention: source.retention,
           rateLimit: source.rateLimit,
+          ...("feedUrl" in source ? { feedUrl: source.feedUrl } : {}),
         },
       });
   }
@@ -391,20 +439,6 @@ export async function setCandidateStatus(input: {
     metadata: { from: row.status, to: input.status },
   });
   return { ok: true };
-}
-
-export function clusterOptions() {
-  return CLUSTERS.map((cluster) => {
-    const category = CATEGORIES.find((item) => item.id === cluster.categoryId);
-    return {
-      id: cluster.id,
-      slug: cluster.slug,
-      name: cluster.name,
-      categorySlug: category?.slug ?? "",
-      categoryName: category?.name ?? "",
-      label: `${category?.name ?? "Category"} / ${cluster.name}`,
-    };
-  });
 }
 
 export async function uniquePainSlug(clusterId: string, title: string) {

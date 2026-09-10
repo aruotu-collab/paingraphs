@@ -10,7 +10,9 @@ export function SourceForm() {
     <form action={saveDiscoverySource} className="mt-6 grid gap-3 border border-line p-5">
       <h3 className="font-display text-2xl">Register a source</h3>
       <p className="text-sm leading-6 text-muted">
-        Only permitted, licensed, or owner-pasted sources. No indiscriminate crawl.
+        Only permitted, licensed, or owner-pasted sources. No indiscriminate
+        crawl. A feed URL is fetched only when commercial use is permitted and
+        access is api or feed.
       </p>
       <input
         name="name"

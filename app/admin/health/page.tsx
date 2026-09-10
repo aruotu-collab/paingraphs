@@ -15,6 +15,13 @@ export default async function AdminHealthPage() {
   const summary = ingest
     ? (JSON.parse(ingest.summary) as Record<string, unknown>)
     : null;
+  const feeds =
+    summary && typeof summary.feeds === "object" && summary.feeds
+      ? (summary.feeds as Record<string, unknown>)
+      : null;
+  const feedErrors = Array.isArray(feeds?.errors)
+    ? feeds.errors.map((item) => String(item))
+    : [];
 
   return (
     <main className="pb-16">
@@ -50,13 +57,24 @@ export default async function AdminHealthPage() {
             : "Not run yet."}
         </p>
         {summary ? (
-          <p className="mt-2 font-mono text-xs text-muted">
-            extracted {String(summary.extracted ?? 0)} · matched{" "}
-            {String(summary.matched ?? 0)} · clustered {String(summary.clustered ?? 0)}{" "}
-            · created {String(summary.created ?? 0)} · discarded{" "}
-            {String(summary.discarded ?? 0)} · duplicates{" "}
-            {String(summary.duplicates ?? 0)} · scores {String(summary.scores ?? 0)}
-          </p>
+          <>
+            <p className="mt-2 font-mono text-xs text-muted">
+              extracted {String(summary.extracted ?? 0)} · matched{" "}
+              {String(summary.matched ?? 0)} · clustered {String(summary.clustered ?? 0)}{" "}
+              · created {String(summary.created ?? 0)} · discarded{" "}
+              {String(summary.discarded ?? 0)} · duplicates{" "}
+              {String(summary.duplicates ?? 0)} · scores {String(summary.scores ?? 0)}
+            </p>
+            {feeds ? (
+              <p className="mt-2 font-mono text-xs text-muted">
+                feeds fetched {String(feeds.fetched ?? 0)} · queued{" "}
+                {String(feeds.queued ?? 0)}
+                {feedErrors.length
+                  ? ` · errors ${feedErrors.join("; ")}`
+                  : ""}
+              </p>
+            ) : null}
+          </>
         ) : null}
         <div className="mt-4">
           <RunIngestButton />

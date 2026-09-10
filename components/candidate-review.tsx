@@ -1,23 +1,24 @@
+import type { PlacementOption } from "@/lib/catalog/placements";
 import {
   approveCandidate,
   mergeCandidate,
   reviewCandidate,
 } from "@/lib/discovery/actions";
-import { clusterOptions } from "@/lib/discovery/store";
 import type { PainGraph } from "@/lib/paingraph/types";
 
 export function CandidateReview({
   candidateId,
   status,
   graphs,
+  clusters,
   defaultClusterId,
 }: {
   candidateId: string;
   status: string;
   graphs: PainGraph[];
+  clusters: PlacementOption[];
   defaultClusterId?: string;
 }) {
-  const clusters = clusterOptions();
   const closed = status === "approved" || status === "rejected" || status === "merged";
 
   return (
@@ -37,6 +38,28 @@ export function CandidateReview({
               </option>
             ))}
           </select>
+          <p className="text-sm leading-6 text-muted">
+            If none fit, add a category for this candidate. The group can stay
+            blank and will use the category name.
+          </p>
+          <div className="grid gap-3 md:grid-cols-2">
+            <label className="grid gap-1 text-xs uppercase tracking-[0.14em] text-muted">
+              New category
+              <input
+                name="newCategory"
+                placeholder="Product safety"
+                className="border border-line bg-transparent px-3 py-2 text-sm normal-case tracking-normal text-paper"
+              />
+            </label>
+            <label className="grid gap-1 text-xs uppercase tracking-[0.14em] text-muted">
+              New group
+              <input
+                name="newCluster"
+                placeholder="Recalls"
+                className="border border-line bg-transparent px-3 py-2 text-sm normal-case tracking-normal text-paper"
+              />
+            </label>
+          </div>
           <textarea
             name="reviewNote"
             rows={2}

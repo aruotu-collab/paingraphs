@@ -65,6 +65,10 @@ const PAIN_CUES = [
   "blister",
   "stink",
   "clog",
+  "hazard",
+  "recall",
+  "injur",
+  "unsafe",
 ];
 
 const SPAM_CUES = [
@@ -236,10 +240,11 @@ export function extractSignal(input: {
   const words = contentTokenList(raw);
   const spam = hasCue(lower, SPAM_CUES) || (raw.match(/https?:\/\//g) ?? []).length > 2;
   const painHits = PAIN_CUES.filter((cue) => lower.includes(cue)).length;
+  const seeking = hasCue(lower, SEEKING_CUES);
   const noise =
     words.length < 4 ||
     spam ||
-    (painHits === 0 && !input.lenient && raw.length < 40);
+    (painHits === 0 && !seeking && !input.lenient && raw.length < 40);
 
   const painStatement =
     firstMatchingSentence(raw, (sentence) =>
@@ -257,7 +262,7 @@ export function extractSignal(input: {
       DISSATISFACTION_CUES.some((cue) => sentence.toLowerCase().includes(cue)),
     ) || null;
 
-  const seekingSolution = hasCue(lower, SEEKING_CUES);
+  const seekingSolution = seeking;
   const moneySignal = hasCue(lower, MONEY_CUES)
     ? firstMatchingSentence(raw, (sentence) =>
         MONEY_CUES.some((cue) => sentence.toLowerCase().includes(cue)),

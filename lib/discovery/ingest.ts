@@ -2,7 +2,6 @@ import { eq } from "drizzle-orm";
 import { runSavedPainAlerts } from "@/lib/alerts/run";
 import { db } from "@/lib/db";
 import {
-  discoverySources,
   painCandidateSignals,
   painCandidates,
   painSignals,
@@ -204,12 +203,8 @@ export async function runDiscoveryIngest() {
   const ranks = await snapshotBillboardRanks();
   const alerts = await runSavedPainAlerts();
 
-  const enabled = await db
-    .select({ id: discoverySources.id })
-    .from(discoverySources)
-    .where(eq(discoverySources.enabled, true));
-  for (const source of enabled) {
-    await markSourceIngested(source.id);
+  for (const sourceId of feeds.ingestedIds) {
+    await markSourceIngested(sourceId);
   }
 
   const summary = {

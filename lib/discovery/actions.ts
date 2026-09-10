@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { CATEGORIES, CLUSTERS } from "@/lib/catalog/data";
+import { resolvePlacement } from "@/lib/catalog/placements";
 import { db } from "@/lib/db";
 import { painGraphScores, pains } from "@/lib/db/schema";
 import { snapshotFromPain } from "@/lib/paingraph/scores";
@@ -13,7 +13,6 @@ import {
   SOURCE_TYPES,
   addDiscoverySignal,
   attachSignalsToPain,
-  clusterOptions,
   createCandidate,
   getCandidate,
   setCandidateStatus,
@@ -38,15 +37,20 @@ export async function submitCandidate(formData: FormData) {
   const title = clip(String(formData.get("title") ?? ""), 160);
   const problem = clip(String(formData.get("problem") ?? ""), 4000);
   if (title.length < 4 || problem.length < 12) return;
-  const cluster = clusterOptions().find(
-    (item) => item.id === String(formData.get("clusterId") ?? ""),
-  );
+  const placement = await resolvePlacement({
+    clusterId: optionalText(formData.get("clusterId")),
+    categoryName: optionalText(formData.get("newCategory"), 80),
+    clusterName: optionalText(formData.get("newCluster"), 80),
+  });
+  if ("error" in placement) return;
   await createCandidate({
     title,
     problem,
     persona: optionalText(formData.get("persona")),
-    categorySlug: cluster?.categorySlug ?? optionalText(formData.get("categorySlug")),
-    clusterSlug: cluster?.slug ?? optionalText(formData.get("clusterSlug")),
+    categorySlug:
+      placement.category.slug ?? optionalText(formData.get("categorySlug")),
+    clusterSlug:
+      placement.cluster.slug ?? optionalText(formData.get("clusterSlug")),
     countries: optionalText(formData.get("countries")),
     productsDetected: optionalText(formData.get("productsDetected")),
     confidence: optionalScore(formData.get("confidence")),
@@ -108,13 +112,14 @@ export async function approveCandidate(formData: FormData) {
   if (!candidate) return;
   if (candidate.status === "approved" && candidate.painId) return;
 
-  const clusterId = String(formData.get("clusterId") ?? "");
-  const cluster =
-    CLUSTERS.find((item) => item.id === clusterId) ??
-    CLUSTERS.find((item) => item.slug === candidate.clusterSlug) ??
-    CLUSTERS[0];
-  if (!cluster) return;
-  const category = CATEGORIES.find((item) => item.id === cluster.categoryId);
+  const placement = await resolvePlacement({
+    clusterId: optionalText(formData.get("clusterId")),
+    categoryName: optionalText(formData.get("newCategory"), 80),
+    clusterName: optionalText(formData.get("newCluster"), 80),
+    fallbackClusterSlug: candidate.clusterSlug,
+  });
+  if ("error" in placement) return;
+  const { category, cluster } = placement;
   const slug = await uniquePainSlug(cluster.id, candidate.title);
   const now = new Date();
   const painId = `cand-${id.slice(0, 12)}`;
@@ -165,6 +170,7 @@ export async function approveCandidate(formData: FormData) {
   revalidateOwner();
   if (category) {
     revalidatePath(`/${category.slug}`);
+    revalidatePath(`/${category.slug}/${cluster.slug}`);
   }
 }
 

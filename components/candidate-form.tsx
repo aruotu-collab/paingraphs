@@ -1,8 +1,8 @@
+import { listPlacementOptions } from "@/lib/catalog/placements";
 import { submitCandidate } from "@/lib/discovery/actions";
-import { clusterOptions } from "@/lib/discovery/store";
 
-export function CandidateForm() {
-  const clusters = clusterOptions();
+export async function CandidateForm() {
+  const clusters = await listPlacementOptions();
   return (
     <form action={submitCandidate} className="mt-6 grid gap-3 border border-line p-5">
       <h3 className="font-display text-2xl">Add a candidate</h3>
@@ -33,6 +33,28 @@ export function CandidateForm() {
           </option>
         ))}
       </select>
+      <p className="text-sm leading-6 text-muted">
+        If none fit, add a category. Leave the group blank to reuse the
+        category name.
+      </p>
+      <div className="grid gap-3 md:grid-cols-2">
+        <label className="grid gap-1 text-xs uppercase tracking-[0.14em] text-muted">
+          New category
+          <input
+            name="newCategory"
+            placeholder="Product safety"
+            className="border border-line bg-transparent px-3 py-2 text-sm normal-case tracking-normal text-paper"
+          />
+        </label>
+        <label className="grid gap-1 text-xs uppercase tracking-[0.14em] text-muted">
+          New group
+          <input
+            name="newCluster"
+            placeholder="Recalls"
+            className="border border-line bg-transparent px-3 py-2 text-sm normal-case tracking-normal text-paper"
+          />
+        </label>
+      </div>
       <div className="grid gap-3 md:grid-cols-2">
         <input
           name="persona"

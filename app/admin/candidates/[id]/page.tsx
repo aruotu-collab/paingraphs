@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CandidateReview } from "@/components/candidate-review";
-import { CLUSTERS } from "@/lib/catalog/data";
+import { listPlacementOptions } from "@/lib/catalog/placements";
 import { getCandidate } from "@/lib/discovery/store";
 import { listAllPainGraphs } from "@/lib/paingraph/queries";
 
@@ -13,15 +13,18 @@ export default async function AdminCandidatePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [candidate, graphs] = await Promise.all([
+  const [candidate, graphs, placements] = await Promise.all([
     getCandidate(id),
     listAllPainGraphs(),
+    listPlacementOptions(),
   ]);
   if (!candidate) notFound();
   const related = graphs.find((graph) => graph.id === candidate.relatedPainId);
   const approved = graphs.find((graph) => graph.id === candidate.painId);
-  const defaultCluster = CLUSTERS.find(
-    (cluster) => cluster.slug === candidate.clusterSlug,
+  const defaultCluster = placements.find(
+    (cluster) =>
+      cluster.slug === candidate.clusterSlug ||
+      cluster.categorySlug === candidate.categorySlug,
   );
 
   return (
@@ -114,6 +117,7 @@ export default async function AdminCandidatePage({
         candidateId={candidate.id}
         status={candidate.status}
         graphs={graphs.filter((graph) => graph.status === "published")}
+        clusters={placements}
         defaultClusterId={defaultCluster?.id}
       />
     </main>
