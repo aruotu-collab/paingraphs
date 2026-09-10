@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { AccountMenu } from "@/components/account-menu";
+import { AccountStatus } from "@/components/account-status";
 import { OwnerNav } from "@/components/owner-nav";
 import { PUBLIC_NAV } from "@/lib/nav";
 
@@ -19,7 +19,7 @@ export function SiteHeader() {
         </nav>
         <div className="flex items-center gap-3">
           <OwnerNav />
-          <AccountMenu />
+          <AccountStatus />
         </div>
       </div>
       <nav className="flex gap-4 overflow-x-auto border-t border-line px-5 py-2 text-sm text-muted md:hidden">

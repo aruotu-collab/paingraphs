@@ -1,21 +1,9 @@
-"use client";
-
 import Link from "next/link";
-import { useEffect, useState } from "react";
 import { SignOutButton } from "@/components/sign-out-button";
-import { authClient } from "@/lib/auth-client";
+import { getSession } from "@/lib/session";
 
-export function AccountMenu() {
-  const { data: session, isPending } = authClient.useSession();
-  const [ready, setReady] = useState(false);
-
-  useEffect(() => {
-    setReady(true);
-  }, []);
-
-  if (!ready || isPending) {
-    return <div className="h-8 w-20 bg-ink-2" aria-hidden="true" />;
-  }
+export async function AccountStatus() {
+  const session = await getSession();
 
   if (session) {
     return (

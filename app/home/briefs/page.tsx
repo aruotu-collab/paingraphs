@@ -40,12 +40,19 @@ export default async function BriefsPage() {
         </p>
       ) : (
         <>
-          <form action={saveCampaignBrief} className="mt-10 grid gap-3 border border-line p-5">
+          <form
+            action={saveCampaignBrief}
+            autoComplete="off"
+            className="mt-10 grid gap-3 border border-line p-5"
+          >
             <select
               name="painId"
               required
               className="border border-line bg-transparent px-3 py-2 text-sm text-paper"
             >
+              <option value="" className="bg-ink">
+                Choose a PainGraph
+              </option>
               {graphs.map((graph) => (
                 <option key={graph.id} value={graph.id} className="bg-ink">
                   {graph.title}
@@ -54,7 +61,8 @@ export default async function BriefsPage() {
             </select>
             <div className="grid gap-3 md:grid-cols-3">
               <select
-                name="country"
+                name="market"
+                autoComplete="off"
                 defaultValue="*"
                 className="border border-line bg-transparent px-3 py-2 text-sm text-paper"
               >

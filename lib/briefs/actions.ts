@@ -23,7 +23,7 @@ export async function saveCampaignBrief(formData: FormData) {
   const result = await createBrief({
     userId: session.user.id,
     painId,
-    country: parseCountry(String(formData.get("country") ?? "*")),
+    country: parseCountry(String(formData.get("market") ?? formData.get("country") ?? "*")),
     destinationUrl: parsed && "url" in parsed ? parsed.url : null,
     dailyBudget: optionalText(formData.get("dailyBudget"), 40),
     objective,
