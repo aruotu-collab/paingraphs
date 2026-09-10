@@ -76,6 +76,12 @@ export function SourceForm() {
           className="border border-line bg-transparent px-3 py-2 text-sm text-paper"
         />
       </div>
+      <input
+        name="feedUrl"
+        type="url"
+        placeholder="Licensed JSON or RSS feed URL (api/feed only)"
+        className="border border-line bg-transparent px-3 py-2 text-sm text-paper"
+      />
       <label className="flex items-center gap-2 text-sm text-muted">
         <input type="checkbox" name="enabled" value="1" defaultChecked />
         Enabled

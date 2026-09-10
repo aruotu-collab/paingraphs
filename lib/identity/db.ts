@@ -265,4 +265,10 @@ async function createTables() {
     "ALTER TABLE user_profiles ADD COLUMN stripe_subscription_status TEXT",
   );
   await tryExecute("ALTER TABLE user_profiles ADD COLUMN stripe_cancel_at INTEGER");
+  await tryExecute(
+    "ALTER TABLE alert_preferences ADD COLUMN email_price_updates INTEGER NOT NULL DEFAULT 0",
+  );
+  await tryExecute(
+    "ALTER TABLE alert_preferences ADD COLUMN email_search_updates INTEGER NOT NULL DEFAULT 0",
+  );
 }

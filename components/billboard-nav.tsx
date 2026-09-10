@@ -29,6 +29,9 @@ function hrefFor(view: BillboardView, filters: BillboardFilters) {
   return query ? `/top-pains?${query}` : "/top-pains";
 }
 
+const fieldClass =
+  "border border-line bg-transparent px-3 py-2 text-xs text-paper";
+
 export function BillboardNav({
   view,
   filters,
@@ -56,13 +59,15 @@ export function BillboardNav({
       <form
         method="get"
         action="/top-pains"
+        autoComplete="off"
         className="mt-4 grid gap-2 md:grid-cols-5"
       >
         {view !== "pain" ? <input type="hidden" name="view" value={view} /> : null}
         <select
           name="category"
           defaultValue={filters.category ?? ""}
-          className="border border-line bg-transparent px-3 py-2 text-xs text-paper"
+          autoComplete="off"
+          className={fieldClass}
         >
           <option value="" className="bg-ink">
             All categories
@@ -75,11 +80,12 @@ export function BillboardNav({
         </select>
         <select
           name="country"
-          defaultValue={filters.country ?? ""}
-          className="border border-line bg-transparent px-3 py-2 text-xs text-paper"
+          defaultValue={filters.country ?? "*"}
+          autoComplete="off"
+          className={fieldClass}
         >
           {DESTINATION_COUNTRIES.map((row) => (
-            <option key={row.code} value={row.code === "*" ? "" : row.code} className="bg-ink">
+            <option key={row.code} value={row.code} className="bg-ink">
               {row.code === "*" ? "Any country" : row.label}
             </option>
           ))}
@@ -87,7 +93,8 @@ export function BillboardNav({
         <select
           name="products"
           defaultValue={filters.products ?? "any"}
-          className="border border-line bg-transparent px-3 py-2 text-xs text-paper"
+          autoComplete="off"
+          className={fieldClass}
         >
           <option value="any" className="bg-ink">
             Any products
@@ -102,7 +109,8 @@ export function BillboardNav({
         <select
           name="programmes"
           defaultValue={filters.programmes ?? "any"}
-          className="border border-line bg-transparent px-3 py-2 text-xs text-paper"
+          autoComplete="off"
+          className={fieldClass}
         >
           <option value="any" className="bg-ink">
             Any programmes
@@ -122,7 +130,8 @@ export function BillboardNav({
             max={100}
             defaultValue={filters.minIntent ?? ""}
             placeholder="Min intent"
-            className="min-w-0 flex-1 border border-line bg-transparent px-3 py-2 text-xs text-paper"
+            autoComplete="off"
+            className={`min-w-0 flex-1 ${fieldClass}`}
           />
           <button
             type="submit"

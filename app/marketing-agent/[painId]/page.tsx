@@ -61,12 +61,14 @@ export default async function MarketingAgentPainPage({
         Affiliate {Math.round(graph.scores.affiliate)} · Intent{" "}
         {Math.round(graph.scores.buyingIntent)} · {graph.status}
       </p>
-      <Link
-        href={graph.href}
-        className="mt-4 inline-block text-sm text-copper hover:text-copper-2"
-      >
-        View public PainGraph
-      </Link>
+      <div className="mt-4 flex flex-wrap gap-4 text-sm">
+        <Link href={graph.href} className="text-copper hover:text-copper-2">
+          View public PainGraph
+        </Link>
+        <Link href="/home/briefs" className="text-copper hover:text-copper-2">
+          Draft a campaign brief
+        </Link>
+      </div>
 
       <section className="mt-10 space-y-6">
         {products.length === 0 ? (

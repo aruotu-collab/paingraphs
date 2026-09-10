@@ -729,6 +729,12 @@ export const alertPreferences = sqliteTable("alert_preferences", {
   emailOpportunity: integer("email_opportunity", { mode: "boolean" })
     .$defaultFn(() => false)
     .notNull(),
+  emailPriceUpdates: integer("email_price_updates", { mode: "boolean" })
+    .$defaultFn(() => false)
+    .notNull(),
+  emailSearchUpdates: integer("email_search_updates", { mode: "boolean" })
+    .$defaultFn(() => false)
+    .notNull(),
   updatedAt: timestamp("updated_at"),
 });
 
@@ -805,6 +811,7 @@ export const discoverySources = sqliteTable("discovery_sources", {
     .$defaultFn(() => true)
     .notNull(),
   lastIngestedAt: integer("last_ingested_at", { mode: "timestamp_ms" }),
+  feedUrl: text("feed_url"),
   createdAt: timestamp("created_at"),
   updatedAt: timestamp("updated_at"),
 });
@@ -826,6 +833,9 @@ export const discoverySignals = sqliteTable(
     }),
     candidateId: text("candidate_id"),
     confidence: real("confidence"),
+    fingerprint: text("fingerprint"),
+    extractedJson: text("extracted_json"),
+    extractedAt: integer("extracted_at", { mode: "timestamp_ms" }),
     createdAt: timestamp("created_at"),
   },
   (table) => [
@@ -862,6 +872,10 @@ export const painCandidates = sqliteTable(
     }),
     painId: text("pain_id").references(() => pains.id, { onDelete: "set null" }),
     reviewNote: text("review_note"),
+    workaround: text("workaround"),
+    triggerText: text("trigger_text"),
+    jobToBeDone: text("job_to_be_done"),
+    extractionJson: text("extraction_json"),
     createdAt: timestamp("created_at"),
     updatedAt: timestamp("updated_at"),
     reviewedAt: integer("reviewed_at", { mode: "timestamp_ms" }),
@@ -920,6 +934,118 @@ export const ingestRuns = sqliteTable(
     finishedAt: timestamp("finished_at"),
   },
   (table) => [index("ingest_runs_started_idx").on(table.startedAt)],
+);
+
+export const memberProducts = sqliteTable(
+  "member_products",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    url: text("url").notNull(),
+    description: text("description").notNull(),
+    targetCustomer: text("target_customer"),
+    geography: text("geography"),
+    price: text("price"),
+    categorySlug: text("category_slug"),
+    problemsSolved: text("problems_solved"),
+    features: text("features"),
+    positioning: text("positioning"),
+    ownerOwned: integer("owner_owned", { mode: "boolean" })
+      .$defaultFn(() => false)
+      .notNull(),
+    createdAt: timestamp("created_at"),
+    updatedAt: timestamp("updated_at"),
+  },
+  (table) => [index("member_products_user_idx").on(table.userId)],
+);
+
+export const campaignBriefs = sqliteTable(
+  "campaign_briefs",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    painId: text("pain_id")
+      .notNull()
+      .references(() => pains.id, { onDelete: "cascade" }),
+    country: text("country").notNull().default("*"),
+    destinationUrl: text("destination_url"),
+    dailyBudget: text("daily_budget"),
+    objective: text("objective").notNull(),
+    briefJson: text("brief_json").notNull(),
+    createdAt: timestamp("created_at"),
+  },
+  (table) => [
+    index("campaign_briefs_user_idx").on(table.userId),
+    index("campaign_briefs_pain_idx").on(table.painId),
+  ],
+);
+
+export const savedSearches = sqliteTable(
+  "saved_searches",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    view: text("view").notNull(),
+    category: text("category"),
+    country: text("country"),
+    products: text("products"),
+    programmes: text("programmes"),
+    minIntent: integer("min_intent"),
+    createdAt: timestamp("created_at"),
+  },
+  (table) => [index("saved_searches_user_idx").on(table.userId)],
+);
+
+export const productPrices = sqliteTable(
+  "product_prices",
+  {
+    id: text("id").primaryKey(),
+    productId: text("product_id")
+      .notNull()
+      .references(() => products.id, { onDelete: "cascade" }),
+    painId: text("pain_id").references(() => pains.id, { onDelete: "cascade" }),
+    display: text("display").notNull(),
+    amountPence: integer("amount_pence"),
+    currency: text("currency").notNull().default("GBP"),
+    sourceLabel: text("source_label").notNull(),
+    createdAt: timestamp("created_at"),
+  },
+  (table) => [
+    index("product_prices_product_idx").on(table.productId),
+    index("product_prices_pain_idx").on(table.painId),
+  ],
+);
+
+export const priceWatches = sqliteTable(
+  "price_watches",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    productId: text("product_id")
+      .notNull()
+      .references(() => products.id, { onDelete: "cascade" }),
+    painId: text("pain_id")
+      .notNull()
+      .references(() => pains.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at"),
+  },
+  (table) => [
+    uniqueIndex("price_watches_user_product_pain_idx").on(
+      table.userId,
+      table.productId,
+      table.painId,
+    ),
+  ],
 );
 
 export const userRelations = relations(user, ({ many, one }) => ({

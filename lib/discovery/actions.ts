@@ -20,6 +20,7 @@ import {
   uniquePainSlug,
   upsertDiscoverySource,
 } from "./store";
+import { publicFeedUrl } from "./feed";
 import { clip, optionalScore, optionalText } from "./text";
 
 function revalidateOwner() {
@@ -182,6 +183,9 @@ export async function saveDiscoverySource(formData: FormData) {
     return;
   }
   if (commercialUse === "forbidden") return;
+  const rawFeed = optionalText(formData.get("feedUrl"), 400);
+  const feedUrl = rawFeed ? publicFeedUrl(rawFeed) : null;
+  if (rawFeed && !feedUrl) return;
   await upsertDiscoverySource({
     id: optionalText(formData.get("sourceId")) ?? undefined,
     name,
@@ -192,6 +196,7 @@ export async function saveDiscoverySource(formData: FormData) {
     attribution: optionalText(formData.get("attribution"), 400),
     retention: optionalText(formData.get("retention"), 400),
     rateLimit: optionalText(formData.get("rateLimit"), 200),
+    feedUrl: accessMethod === "crawler" ? null : feedUrl,
     enabled: formData.get("enabled") === "1",
   });
   revalidatePath("/admin/sources");

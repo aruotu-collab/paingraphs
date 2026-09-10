@@ -90,6 +90,18 @@ export default async function MemberHomePage({
         </p>
       ) : null}
       <div className="mt-4 flex flex-wrap gap-4 text-sm">
+        <Link href="/home/alerts" className="text-copper hover:text-copper-2">
+          Alerts
+        </Link>
+        <Link href="/home/products" className="text-copper hover:text-copper-2">
+          My Products
+        </Link>
+        <Link href="/home/briefs" className="text-copper hover:text-copper-2">
+          Campaign briefs
+        </Link>
+        <Link href="/home/searches" className="text-copper hover:text-copper-2">
+          Saved searches
+        </Link>
         {!access.pro ? (
           <Link href="/pricing" className="text-copper hover:text-copper-2">
             Unlock Pro

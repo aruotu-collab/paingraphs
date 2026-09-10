@@ -2,6 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PainRecommend } from "@/components/pain-recommend";
 import { SavePainButton } from "@/components/save-pain-button";
+import { WatchPriceButton } from "@/components/watch-price-button";
+import { latestPrice, watchedPriceIds } from "@/lib/prices/store";
 import { listSavedPainIds } from "@/lib/paingraph/actions";
 import { experienceFromComments } from "@/lib/paingraph/experience";
 import { headers } from "next/headers";
@@ -40,6 +42,14 @@ export default async function PainGraphPage({
   if (!page) notFound();
   const session = await getSession();
   const saved = (await listSavedPainIds()).includes(page.id);
+  const watching = session
+    ? await watchedPriceIds(session.user.id, page.id)
+    : new Set<string>();
+  const priceFlags = new Map<string, boolean>();
+  for (const product of page.products) {
+    const recorded = await latestPrice(product.id, page.id);
+    priceFlags.set(product.id, Boolean(product.priceBand || recorded));
+  }
   const voices = experienceFromComments(page.evidence);
   const unmetNeed = visibleUnmetNeed(page.criteria, page.products);
 
@@ -178,6 +188,28 @@ export default async function PainGraphPage({
             </p>
           ) : null}
         </div>
+        {session ? (
+          <ul className="mt-6 space-y-3">
+            {page.products.map((product) => (
+              <li key={product.id} className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-sm">
+                  {product.name}
+                  {product.priceBand ? (
+                    <span className="ml-2 font-mono text-xs text-muted">
+                      {product.priceBand}
+                    </span>
+                  ) : null}
+                </p>
+                <WatchPriceButton
+                  painId={page.id}
+                  productId={product.id}
+                  watching={watching.has(product.id)}
+                  hasPrice={priceFlags.get(product.id) ?? false}
+                />
+              </li>
+            ))}
+          </ul>
+        ) : null}
       </section>
 
       <section className="mt-12 grid gap-4 md:grid-cols-2">

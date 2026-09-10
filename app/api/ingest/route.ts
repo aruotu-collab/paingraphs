@@ -6,7 +6,8 @@ export const dynamic = "force-dynamic";
 export async function GET(request: Request) {
   const secret = process.env.CRON_SECRET;
   const auth = request.headers.get("authorization");
-  if (secret && auth !== `Bearer ${secret}`) {
+  const hosted = process.env.VERCEL === "1";
+  if (secret ? auth !== `Bearer ${secret}` : hosted) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   try {

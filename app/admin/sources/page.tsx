@@ -1,5 +1,6 @@
 import { SignalForm, SourceForm } from "@/components/source-form";
 import { formatStamp } from "@/lib/admin/format";
+import { parseExtraction } from "@/lib/discovery/extract";
 import {
   listDiscoverySignals,
   listDiscoverySources,
@@ -17,8 +18,9 @@ export default async function AdminSourcesPage() {
     <main className="pb-16">
       <h1 className="mt-8 font-display text-4xl">Source registry</h1>
       <p className="mt-4 max-w-2xl text-sm leading-6 text-muted">
-        Phase 3 starts here: permitted sources, pasted signals, and a job that
-        matches them. No live scrape of the open web.
+        Permitted sources and pasted signals. The daily job extracts problem,
+        persona, workaround, and geography, then matches or queues a candidate.
+        No live scrape of the open web.
       </p>
       <ul className="mt-8">
         {sources.map((source) => (
@@ -30,6 +32,7 @@ export default async function AdminSourcesPage() {
             </p>
             <p className="mt-1 font-mono text-xs text-muted">
               Last ingest {formatStamp(source.lastIngestedAt, "datetime")}
+              {source.feedUrl ? ` · ${source.feedUrl}` : ""}
             </p>
             {source.termsNotes ? (
               <p className="mt-2 text-sm leading-6 text-muted">{source.termsNotes}</p>
@@ -45,16 +48,24 @@ export default async function AdminSourcesPage() {
           {signals.length === 0 ? (
             <li className="text-sm text-muted">No signals queued yet.</li>
           ) : (
-            signals.map((signal) => (
-              <li key={signal.id} className="border-t border-line py-3 text-sm">
-                <p className="text-paper">{signal.rawText}</p>
-                <p className="mt-1 text-xs text-muted">
-                  {signal.status}
-                  {signal.matchedPainId ? ` · matched ${signal.matchedPainId}` : ""}
-                  {signal.candidateId ? ` · candidate ${signal.candidateId}` : ""}
-                </p>
-              </li>
-            ))
+            signals.map((signal) => {
+              const extracted = parseExtraction(signal.extractedJson);
+              return (
+                <li key={signal.id} className="border-t border-line py-3 text-sm">
+                  <p className="text-paper">{signal.rawText}</p>
+                  <p className="mt-1 text-xs text-muted">
+                    {signal.status}
+                    {extracted?.noise
+                      ? ` · ${extracted.reason}`
+                      : extracted?.persona
+                        ? ` · ${extracted.persona}`
+                        : ""}
+                    {signal.matchedPainId ? ` · matched ${signal.matchedPainId}` : ""}
+                    {signal.candidateId ? ` · candidate ${signal.candidateId}` : ""}
+                  </p>
+                </li>
+              );
+            })
           )}
         </ul>
       </section>

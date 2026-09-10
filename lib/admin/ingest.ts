@@ -10,6 +10,7 @@ export async function runOwnerIngest() {
   revalidatePath("/admin");
   revalidatePath("/admin/health");
   revalidatePath("/admin/candidates");
+  revalidatePath("/admin/sources");
   revalidatePath("/admin/rankings");
   revalidatePath("/top-pains");
 }

@@ -7,6 +7,8 @@ import type { AlertPrefs } from "./types";
 const DEFAULT_PREFS: AlertPrefs = {
   emailSavedUpdates: false,
   emailOpportunity: false,
+  emailPriceUpdates: false,
+  emailSearchUpdates: false,
 };
 
 export async function getAlertPrefs(userId: string): Promise<AlertPrefs> {
@@ -20,6 +22,8 @@ export async function getAlertPrefs(userId: string): Promise<AlertPrefs> {
     ? {
         emailSavedUpdates: row.emailSavedUpdates,
         emailOpportunity: row.emailOpportunity,
+        emailPriceUpdates: row.emailPriceUpdates,
+        emailSearchUpdates: row.emailSearchUpdates,
       }
     : DEFAULT_PREFS;
 }
@@ -33,6 +37,8 @@ export async function saveAlertPrefs(userId: string, prefs: AlertPrefs) {
       userId,
       emailSavedUpdates: prefs.emailSavedUpdates,
       emailOpportunity: prefs.emailOpportunity,
+      emailPriceUpdates: prefs.emailPriceUpdates,
+      emailSearchUpdates: prefs.emailSearchUpdates,
       updatedAt: now,
     })
     .onConflictDoUpdate({
@@ -40,6 +46,8 @@ export async function saveAlertPrefs(userId: string, prefs: AlertPrefs) {
       set: {
         emailSavedUpdates: prefs.emailSavedUpdates,
         emailOpportunity: prefs.emailOpportunity,
+        emailPriceUpdates: prefs.emailPriceUpdates,
+        emailSearchUpdates: prefs.emailSearchUpdates,
         updatedAt: now,
       },
     });

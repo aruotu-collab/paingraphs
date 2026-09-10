@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { BillboardNav } from "@/components/billboard-nav";
 import { PainCard } from "@/components/pain-card";
+import { SaveSearchForm } from "@/components/save-search-form";
 import { entitlements } from "@/lib/identity/profile";
 import {
   filterBillboard,
@@ -41,6 +42,7 @@ export default async function BillboardPage({
         entitlements(profile, capabilities.admin || capabilities.marketingAgent),
       )
     : { pro: false };
+  const signedIn = Boolean(session);
   const rows = sortBillboard(
     filterBillboard(await listBillboardRows(), filters),
     view,
@@ -72,6 +74,9 @@ export default async function BillboardPage({
       <h1 className="mt-3 font-display text-5xl">Live opportunity rankings.</h1>
       <p className="mt-5 max-w-2xl text-lg leading-8 text-muted">{copy}</p>
       <BillboardNav view={view} filters={filters} />
+      {signedIn ? (
+        <SaveSearchForm view={view} filters={filters} pro={access.pro} />
+      ) : null}
       {!access.pro ? (
         <p className="mt-4 text-xs text-muted">
           Showing the top {visible.length}.{" "}

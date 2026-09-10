@@ -14,7 +14,13 @@ import { ensureIdentityTables } from "@/lib/identity/db";
 import { todaysOpportunity, utcDay } from "@/lib/opportunities/daily";
 import { listPainGraphs } from "@/lib/paingraph/queries";
 import type { PainGraph } from "@/lib/paingraph/types";
-import { isOpportunityAlert, isSavedAlert, type AlertKind } from "./types";
+import {
+  isOpportunityAlert,
+  isPriceAlert,
+  isSavedAlert,
+  isSearchAlert,
+  type AlertKind,
+} from "./types";
 
 const SCORE_MOVE = 5;
 
@@ -137,6 +143,8 @@ async function emailPendingAlerts() {
       email: user.email,
       emailSavedUpdates: alertPreferences.emailSavedUpdates,
       emailOpportunity: alertPreferences.emailOpportunity,
+      emailPriceUpdates: alertPreferences.emailPriceUpdates,
+      emailSearchUpdates: alertPreferences.emailSearchUpdates,
     })
     .from(memberAlerts)
     .innerJoin(user, eq(user.id, memberAlerts.userId))
@@ -147,7 +155,9 @@ async function emailPendingAlerts() {
   for (const row of pending) {
     const wantsSaved = row.emailSavedUpdates && isSavedAlert(row.kind);
     const wantsOotd = row.emailOpportunity && isOpportunityAlert(row.kind);
-    if (!wantsSaved && !wantsOotd) continue;
+    const wantsPrice = row.emailPriceUpdates && isPriceAlert(row.kind);
+    const wantsSearch = row.emailSearchUpdates && isSearchAlert(row.kind);
+    if (!wantsSaved && !wantsOotd && !wantsPrice && !wantsSearch) continue;
     const list = byUser.get(row.userId) ?? [];
     list.push(row);
     byUser.set(row.userId, list);
@@ -176,6 +186,80 @@ async function emailPendingAlerts() {
     }
   }
   return emailed;
+}
+
+export async function notifyPriceChange(input: {
+  productId: string;
+  productName: string;
+  previous: string;
+  display: string;
+  painId?: string | null;
+}) {
+  await ensureIdentityTables();
+  const { listWatchersForProduct } = await import("@/lib/prices/store");
+  const { listPainGraphs } = await import("@/lib/paingraph/queries");
+  const watchers = await listWatchersForProduct(input.productId);
+  const graphs = await listPainGraphs();
+  const drafts: AlertDraft[] = [];
+  for (const watch of watchers) {
+    if (input.painId && watch.painId !== input.painId) continue;
+    const graph = graphs.find((item) => item.id === watch.painId);
+    drafts.push({
+      userId: watch.userId,
+      painId: watch.painId,
+      kind: "price_change",
+      title: "A watched price changed",
+      body: `${input.productName} moved from ${input.previous} to ${input.display}. This is a recorded observation, not a live shop scrape.`,
+      href: graph?.href ?? "/home/alerts",
+    });
+  }
+  if (drafts.length === 0) return { created: 0 };
+  const result = await insertDrafts(drafts, utcDay());
+  await emailPendingAlerts();
+  return result;
+}
+
+async function savedSearchDrafts(): Promise<AlertDraft[]> {
+  const { savedSearches } = await import("@/lib/db/schema");
+  const { listBillboardRows, isBillboardView } = await import(
+    "@/lib/opportunities/board"
+  );
+  const { searchMatches, searchHref } = await import("@/lib/searches/store");
+  const { movementFor } = await import("@/lib/ranks/snapshots");
+  const rows = await db.select().from(savedSearches);
+  if (rows.length === 0) return [];
+  const board = await listBillboardRows();
+  const drafts: AlertDraft[] = [];
+  const views = [
+    ...new Set(rows.map((row) => (isBillboardView(row.view) ? row.view : "pain"))),
+  ];
+  const movements = new Map(
+    await Promise.all(
+      views.map(async (view) => [
+        view,
+        await movementFor(
+          view,
+          board.map((row) => row.id),
+        ),
+      ] as const),
+    ),
+  );
+  for (const search of rows) {
+    const view = isBillboardView(search.view) ? search.view : "pain";
+    const movement = movements.get(view);
+    for (const { graph } of searchMatches(search, board)) {
+      if (!movement?.get(graph.id)?.isNew) continue;
+      drafts.push({
+        userId: search.userId,
+        painId: graph.id,
+        kind: "saved_search",
+        title: "A new pain matched a saved search",
+        body: `${graph.title} is new on “${search.name}”.`,
+        href: searchHref(search),
+      });
+    }
+  }
+  return drafts;
 }
 
 export async function alertIfSavedOpportunity(userId: string, painId: string) {
@@ -306,6 +390,9 @@ export async function runSavedPainAlerts() {
       });
     }
   }
+
+  const searchDrafts = await savedSearchDrafts();
+  drafts.push(...searchDrafts);
 
   const { created, failed } = await insertDrafts(drafts, day);
   const emailed = await emailPendingAlerts();

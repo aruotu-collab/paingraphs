@@ -17,7 +17,7 @@ const freePoints = [
   "Browse public PainGraphs",
   "Use recommendation sliders",
   "Save and follow up to 5 pains",
-  "Basic alerts on saved pains",
+  "In-app alerts; email only if you opt in",
   "Preview Affiliate and Founder insights",
 ];
 

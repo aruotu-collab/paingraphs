@@ -1,6 +1,7 @@
 import { listCatalogProducts } from "@/lib/admin/ops";
 import { db } from "@/lib/db";
 import { productFits } from "@/lib/db/schema";
+import { recordObservedPrice } from "@/lib/prices/actions";
 
 export const dynamic = "force-dynamic";
 
@@ -29,6 +30,21 @@ export default async function AdminProductsPage() {
               {product.priceBand || "No price band"} · {counts.get(product.id) ?? 0}{" "}
               PainGraphs
             </p>
+            <form action={recordObservedPrice} className="mt-3 flex flex-wrap gap-2">
+              <input type="hidden" name="productId" value={product.id} />
+              <input
+                name="display"
+                required
+                placeholder="Observed price, e.g. £49"
+                className="min-w-[10rem] flex-1 border border-line bg-transparent px-3 py-2 text-xs text-paper"
+              />
+              <button
+                type="submit"
+                className="text-xs uppercase tracking-[0.14em] text-muted hover:text-copper"
+              >
+                Record price
+              </button>
+            </form>
           </li>
         ))}
       </ul>

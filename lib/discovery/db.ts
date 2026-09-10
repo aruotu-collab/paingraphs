@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import { ensureCatalog } from "@/lib/catalog/sync";
 import { db, sqlite } from "@/lib/db";
+import { ensureWorkspaceTables } from "@/lib/workspace/db";
 
 let ready: Promise<void> | null = null;
 
@@ -148,4 +149,16 @@ async function createTables() {
   await db.run(sql`
     CREATE INDEX IF NOT EXISTS ingest_runs_started_idx ON ingest_runs (started_at)
   `);
+  await tryExecute("ALTER TABLE discovery_sources ADD COLUMN feed_url TEXT");
+  await tryExecute("ALTER TABLE discovery_signals ADD COLUMN fingerprint TEXT");
+  await tryExecute("ALTER TABLE discovery_signals ADD COLUMN extracted_json TEXT");
+  await tryExecute("ALTER TABLE discovery_signals ADD COLUMN extracted_at INTEGER");
+  await tryExecute("ALTER TABLE pain_candidates ADD COLUMN workaround TEXT");
+  await tryExecute("ALTER TABLE pain_candidates ADD COLUMN trigger_text TEXT");
+  await tryExecute("ALTER TABLE pain_candidates ADD COLUMN job_to_be_done TEXT");
+  await tryExecute("ALTER TABLE pain_candidates ADD COLUMN extraction_json TEXT");
+  await tryExecute(
+    "CREATE INDEX IF NOT EXISTS discovery_signals_fingerprint_idx ON discovery_signals (fingerprint)",
+  );
+  await ensureWorkspaceTables();
 }

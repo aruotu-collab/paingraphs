@@ -53,6 +53,18 @@ export default async function AdminCandidatePage({
           </dd>
         </div>
         <div>
+          <dt className="text-xs uppercase tracking-[0.14em] text-muted">Trigger</dt>
+          <dd className="mt-1">{candidate.triggerText || "—"}</dd>
+        </div>
+        <div>
+          <dt className="text-xs uppercase tracking-[0.14em] text-muted">Workaround</dt>
+          <dd className="mt-1">{candidate.workaround || "—"}</dd>
+        </div>
+        <div>
+          <dt className="text-xs uppercase tracking-[0.14em] text-muted">Job to be done</dt>
+          <dd className="mt-1">{candidate.jobToBeDone || "—"}</dd>
+        </div>
+        <div>
           <dt className="text-xs uppercase tracking-[0.14em] text-muted">Products</dt>
           <dd className="mt-1">{candidate.productsDetected || "—"}</dd>
         </div>

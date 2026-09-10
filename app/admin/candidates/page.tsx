@@ -75,7 +75,9 @@ export default async function AdminCandidatesPage({
                 </Link>
                 <p className="mt-1 text-xs text-muted">
                   {row.status} · {row.origin} · evidence {row.evidenceCount}
+                  {row.persona ? ` · ${row.persona}` : ""}
                   {row.categorySlug ? ` · ${row.categorySlug}` : ""}
+                  {row.clusterSlug ? `/${row.clusterSlug}` : ""}
                 </p>
               </div>
               <p className="font-mono text-xs text-muted">

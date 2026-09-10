@@ -11,7 +11,8 @@ import {
   pains,
 } from "@/lib/db/schema";
 import { writeAuditLog } from "@/lib/identity/audit";
-import { overlapScore, slugify } from "./text";
+import { extractSignal } from "./extract";
+import { fingerprint, similarity, slugify } from "./text";
 import { ensureDiscoveryTables } from "./db";
 
 export const CANDIDATE_STATUSES = [
@@ -120,6 +121,7 @@ export async function upsertDiscoverySource(input: {
   attribution?: string | null;
   retention?: string | null;
   rateLimit?: string | null;
+  feedUrl?: string | null;
   enabled: boolean;
 }) {
   await ensureDiscoveryTables();
@@ -138,6 +140,7 @@ export async function upsertDiscoverySource(input: {
         attribution: input.attribution ?? null,
         retention: input.retention ?? null,
         rateLimit: input.rateLimit ?? null,
+        feedUrl: input.feedUrl ?? null,
         enabled: input.enabled,
         updatedAt: now,
       })
@@ -154,6 +157,7 @@ export async function upsertDiscoverySource(input: {
     attribution: input.attribution ?? null,
     retention: input.retention ?? null,
     rateLimit: input.rateLimit ?? null,
+    feedUrl: input.feedUrl ?? null,
     frequencyHours: 24,
     enabled: input.enabled,
     createdAt: now,
@@ -178,18 +182,38 @@ export async function addDiscoverySignal(input: {
   geography?: string | null;
 }) {
   await seedDiscoverySources();
+  const extracted = extractSignal({
+    rawText: input.rawText,
+    persona: input.persona,
+    geography: input.geography,
+    lenient: input.sourceId === "src-owner-manual",
+  });
   const id = crypto.randomUUID();
   await db.insert(discoverySignals).values({
     id,
     sourceId: input.sourceId,
     rawText: input.rawText,
     sourceUrl: input.sourceUrl ?? null,
-    persona: input.persona ?? null,
-    geography: input.geography ?? null,
+    persona: extracted.persona ?? input.persona ?? null,
+    geography: extracted.geography ?? input.geography ?? null,
     status: "new",
+    fingerprint: fingerprint(input.rawText) || null,
+    extractedJson: JSON.stringify(extracted),
+    extractedAt: new Date(),
     createdAt: new Date(),
   });
   return id;
+}
+
+export async function findSignalByFingerprint(value: string, exceptId?: string) {
+  if (!value) return null;
+  const rows = await db
+    .select()
+    .from(discoverySignals)
+    .where(eq(discoverySignals.fingerprint, value));
+  return (
+    rows.find((row) => row.id !== exceptId && row.status !== "new") ?? null
+  );
 }
 
 export async function listDiscoverySignals(limit = 80) {
@@ -272,6 +296,10 @@ export async function createCandidate(input: {
   quote?: string | null;
   quoteLabel?: string | null;
   quoteUrl?: string | null;
+  workaround?: string | null;
+  triggerText?: string | null;
+  jobToBeDone?: string | null;
+  extractionJson?: string | null;
   actorUserId?: string | null;
 }) {
   await seedDiscoverySources();
@@ -298,6 +326,10 @@ export async function createCandidate(input: {
     status: "new",
     origin: input.origin ?? "manual",
     sourceId: input.sourceId ?? "src-owner-manual",
+    workaround: input.workaround ?? null,
+    triggerText: input.triggerText ?? null,
+    jobToBeDone: input.jobToBeDone ?? null,
+    extractionJson: input.extractionJson ?? null,
     createdAt: now,
     updatedAt: now,
   });
@@ -306,7 +338,7 @@ export async function createCandidate(input: {
       id: crypto.randomUUID(),
       candidateId: id,
       rawQuote: quote,
-      sourceKind: "manual",
+      sourceKind: input.origin === "ingest" ? "ingest" : "manual",
       sourceLabel: input.quoteLabel || "Owner note",
       sourceUrl: input.quoteUrl ?? null,
       createdAt: now,
@@ -448,19 +480,65 @@ export async function recordIngestRun(input: {
   });
 }
 
-export function titleMatchesExisting(
-  title: string,
-  problem: string,
-  graphs: { id: string; title: string; summary: string }[],
+export function matchExistingPain(
+  extracted: {
+    title: string;
+    painStatement: string;
+    clusterSlug?: string | null;
+    productsMentioned?: string | null;
+  },
+  graphs: {
+    id: string;
+    title: string;
+    summary: string;
+    category: { slug: string };
+    subcategory: { slug: string };
+  }[],
 ) {
   let best: { id: string; score: number } | null = null;
+  const query = `${extracted.title} ${extracted.painStatement} ${extracted.productsMentioned ?? ""}`;
   for (const graph of graphs) {
-    const score = Math.max(
-      overlapScore(title, graph.title),
-      overlapScore(`${title} ${problem}`, `${graph.title} ${graph.summary}`),
+    let score = Math.max(
+      similarity(extracted.title, graph.title),
+      similarity(extracted.painStatement, graph.summary),
+      similarity(query, `${graph.title} ${graph.summary}`),
     );
+    if (extracted.clusterSlug && extracted.clusterSlug === graph.subcategory.slug) {
+      score += 0.08;
+    }
     if (!best || score > best.score) best = { id: graph.id, score };
   }
-  return best && best.score >= 0.42 ? best : null;
+  if (!best) return { match: null, related: null };
+  if (best.score >= 0.46) return { match: best, related: null };
+  if (best.score >= 0.24) return { match: null, related: best };
+  return { match: null, related: null };
+}
+
+export function clusterScore(
+  extracted: {
+    title: string;
+    painStatement: string;
+    productsMentioned?: string | null;
+    clusterSlug?: string | null;
+  },
+  candidate: {
+    title: string;
+    problem: string;
+    productsDetected?: string | null;
+    clusterSlug?: string | null;
+  },
+) {
+  let score = Math.max(
+    similarity(extracted.title, candidate.title),
+    similarity(extracted.painStatement, candidate.problem),
+    similarity(
+      `${extracted.title} ${extracted.painStatement} ${extracted.productsMentioned ?? ""}`,
+      `${candidate.title} ${candidate.problem} ${candidate.productsDetected ?? ""}`,
+    ),
+  );
+  if (extracted.clusterSlug && extracted.clusterSlug === candidate.clusterSlug) {
+    score += 0.08;
+  }
+  return score;
 }
 

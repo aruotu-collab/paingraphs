@@ -20,8 +20,9 @@ export default async function AdminHealthPage() {
     <main className="pb-16">
       <h1 className="mt-8 font-display text-4xl">Site health</h1>
       <p className="mt-4 max-w-2xl text-sm leading-6 text-muted">
-        Traffic, PainGraph engagement, and the last discovery job. The job does
-        not crawl the web.
+        Traffic, PainGraph engagement, and the last discovery job. Vercel runs
+        it daily at 06:00 UTC. The job does not crawl the web, and it does not
+        publish PainGraphs.
       </p>
       <dl className="mt-8 grid gap-4 md:grid-cols-4">
         <div className="border border-line p-4">
@@ -50,9 +51,11 @@ export default async function AdminHealthPage() {
         </p>
         {summary ? (
           <p className="mt-2 font-mono text-xs text-muted">
-            matched {String(summary.matched ?? 0)} · created{" "}
-            {String(summary.created ?? 0)} · clustered {String(summary.clustered ?? 0)}{" "}
-            · scores {String(summary.scores ?? 0)}
+            extracted {String(summary.extracted ?? 0)} · matched{" "}
+            {String(summary.matched ?? 0)} · clustered {String(summary.clustered ?? 0)}{" "}
+            · created {String(summary.created ?? 0)} · discarded{" "}
+            {String(summary.discarded ?? 0)} · duplicates{" "}
+            {String(summary.duplicates ?? 0)} · scores {String(summary.scores ?? 0)}
           </p>
         ) : null}
         <div className="mt-4">

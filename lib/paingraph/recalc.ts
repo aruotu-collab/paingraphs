@@ -30,6 +30,11 @@ export async function recalculatePainScores() {
     const diversity = kinds.get(pain.id)?.size ?? 0;
     const demand = clamp(20 + evidence * 12);
     const confidence = clamp(30 + evidence * 10 + diversity * 8);
+    const paid = clamp(
+      pain.intentScore * 0.5 +
+        pain.organicScore * 0.3 +
+        (100 - pain.competitionScore) * 0.2,
+    );
     const now = new Date();
     await db
       .insert(painGraphScores)
@@ -40,6 +45,7 @@ export async function recalculatePainScores() {
         buyingIntentScore: pain.intentScore,
         reachabilityScore: pain.organicScore,
         founderScore: pain.productGap,
+        paidAcquisitionScore: paid,
         confidenceScore: confidence,
         updatedAt: now,
       })
@@ -47,6 +53,7 @@ export async function recalculatePainScores() {
         target: painGraphScores.painId,
         set: {
           demandScore: demand,
+          paidAcquisitionScore: paid,
           confidenceScore: confidence,
           updatedAt: now,
         },
