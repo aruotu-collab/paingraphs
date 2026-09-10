@@ -25,6 +25,7 @@ import { clip, optionalScore, optionalText } from "./text";
 function revalidateOwner() {
   revalidatePath("/admin");
   revalidatePath("/admin/candidates");
+  revalidatePath("/admin/categories");
   revalidatePath("/admin/sources");
   revalidatePath("/admin/pains");
   revalidatePath("/admin/rankings");

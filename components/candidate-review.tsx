@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { PlacementOption } from "@/lib/catalog/placements";
 import {
   approveCandidate,
@@ -39,27 +40,12 @@ export function CandidateReview({
             ))}
           </select>
           <p className="text-sm leading-6 text-muted">
-            If none fit, add a category for this candidate. The group can stay
-            blank and will use the category name.
+            If none fit,{" "}
+            <Link href="/admin/categories" className="text-copper hover:text-copper-2">
+              add a category
+            </Link>
+            , then come back and choose it here.
           </p>
-          <div className="grid gap-3 md:grid-cols-2">
-            <label className="grid gap-1 text-xs uppercase tracking-[0.14em] text-muted">
-              New category
-              <input
-                name="newCategory"
-                placeholder="Product safety"
-                className="border border-line bg-transparent px-3 py-2 text-sm normal-case tracking-normal text-paper"
-              />
-            </label>
-            <label className="grid gap-1 text-xs uppercase tracking-[0.14em] text-muted">
-              New group
-              <input
-                name="newCluster"
-                placeholder="Recalls"
-                className="border border-line bg-transparent px-3 py-2 text-sm normal-case tracking-normal text-paper"
-              />
-            </label>
-          </div>
           <textarea
             name="reviewNote"
             rows={2}

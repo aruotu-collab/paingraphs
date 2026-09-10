@@ -41,6 +41,32 @@ export async function listPlacementOptions(): Promise<PlacementOption[]> {
   }));
 }
 
+export type PlacementGroup = {
+  categoryId: string;
+  categorySlug: string;
+  categoryName: string;
+  clusters: PlacementOption[];
+};
+
+export async function listPlacementGroups(): Promise<PlacementGroup[]> {
+  const options = await listPlacementOptions();
+  const groups = new Map<string, PlacementGroup>();
+  for (const option of options) {
+    const existing = groups.get(option.categoryId);
+    if (existing) {
+      existing.clusters.push(option);
+      continue;
+    }
+    groups.set(option.categoryId, {
+      categoryId: option.categoryId,
+      categorySlug: option.categorySlug,
+      categoryName: option.categoryName,
+      clusters: [option],
+    });
+  }
+  return [...groups.values()];
+}
+
 export async function getPlacement(clusterId: string) {
   await ensureCatalog();
   const [row] = await db

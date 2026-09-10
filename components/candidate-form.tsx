@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { listPlacementOptions } from "@/lib/catalog/placements";
 import { submitCandidate } from "@/lib/discovery/actions";
 
@@ -34,27 +35,12 @@ export async function CandidateForm() {
         ))}
       </select>
       <p className="text-sm leading-6 text-muted">
-        If none fit, add a category. Leave the group blank to reuse the
-        category name.
+        If none fit,{" "}
+        <Link href="/admin/categories" className="text-copper hover:text-copper-2">
+          add a category
+        </Link>
+        .
       </p>
-      <div className="grid gap-3 md:grid-cols-2">
-        <label className="grid gap-1 text-xs uppercase tracking-[0.14em] text-muted">
-          New category
-          <input
-            name="newCategory"
-            placeholder="Product safety"
-            className="border border-line bg-transparent px-3 py-2 text-sm normal-case tracking-normal text-paper"
-          />
-        </label>
-        <label className="grid gap-1 text-xs uppercase tracking-[0.14em] text-muted">
-          New group
-          <input
-            name="newCluster"
-            placeholder="Recalls"
-            className="border border-line bg-transparent px-3 py-2 text-sm normal-case tracking-normal text-paper"
-          />
-        </label>
-      </div>
       <div className="grid gap-3 md:grid-cols-2">
         <input
           name="persona"
