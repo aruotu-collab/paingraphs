@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { resolvePlacement } from "@/lib/catalog/placements";
 import { db } from "@/lib/db";
 import { painGraphScores, pains } from "@/lib/db/schema";
@@ -25,6 +26,7 @@ import { clip, optionalScore, optionalText } from "./text";
 function revalidateOwner() {
   revalidatePath("/admin");
   revalidatePath("/admin/candidates");
+  revalidatePath("/admin/add-candidate");
   revalidatePath("/admin/categories");
   revalidatePath("/admin/sources");
   revalidatePath("/admin/pains");
@@ -34,7 +36,7 @@ function revalidateOwner() {
 }
 
 export async function submitCandidate(formData: FormData) {
-  const { session } = await requireAdmin("/admin/candidates");
+  const { session } = await requireAdmin("/admin/add-candidate");
   const title = clip(String(formData.get("title") ?? ""), 160);
   const problem = clip(String(formData.get("problem") ?? ""), 4000);
   if (title.length < 4 || problem.length < 12) return;
@@ -67,6 +69,7 @@ export async function submitCandidate(formData: FormData) {
     actorUserId: session.user.id,
   });
   revalidateOwner();
+  redirect("/admin/candidates");
 }
 
 export async function reviewCandidate(formData: FormData) {

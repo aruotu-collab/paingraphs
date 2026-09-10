@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { CandidateForm } from "@/components/candidate-form";
 import { listCandidates } from "@/lib/discovery/store";
 
 export const dynamic = "force-dynamic";
@@ -55,9 +54,14 @@ export default async function AdminCandidatesPage({
             {label}
           </Link>
         ))}
+        <Link
+          href="/admin/add-candidate"
+          className="border border-line px-3 py-1.5 text-muted hover:border-copper hover:text-copper"
+        >
+          Add a candidate
+        </Link>
       </nav>
-      <CandidateForm />
-      <ul className="mt-10">
+      <ul className="mt-8">
         {rows.length === 0 ? (
           <li className="text-sm text-muted">No candidates in this view.</li>
         ) : (

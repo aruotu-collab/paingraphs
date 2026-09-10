@@ -5,11 +5,7 @@ import { submitCandidate } from "@/lib/discovery/actions";
 export async function CandidateForm() {
   const clusters = await listPlacementOptions();
   return (
-    <form action={submitCandidate} className="mt-6 grid gap-3 border border-line p-5">
-      <h3 className="font-display text-2xl">Add a candidate</h3>
-      <p className="text-sm leading-6 text-muted">
-        Curated or owner-found pains wait here. Ingest never publishes them.
-      </p>
+    <form action={submitCandidate} className="mt-8 grid gap-3 border border-line p-5">
       <input
         name="title"
         required

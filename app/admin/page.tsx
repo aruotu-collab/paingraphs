@@ -63,6 +63,9 @@ export default async function AdminPage() {
         <Link href="/admin/candidates" className="text-copper hover:text-copper-2">
           Review candidates
         </Link>
+        <Link href="/admin/add-candidate" className="text-copper hover:text-copper-2">
+          Add a candidate
+        </Link>
         <Link href="/admin/categories" className="text-copper hover:text-copper-2">
           Categories
         </Link>
