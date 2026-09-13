@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { optionalText } from "@/lib/discovery/text";
 import { parseCountry, parseDestinationUrl } from "@/lib/destinations/url";
 import { entitlements } from "@/lib/identity/profile";
@@ -27,10 +28,13 @@ export async function saveCampaignBrief(formData: FormData) {
     destinationUrl: parsed && "url" in parsed ? parsed.url : null,
     dailyBudget: optionalText(formData.get("dailyBudget"), 40),
     objective,
+    includeDrafts: owner,
   });
   revalidatePath("/home/briefs");
   revalidatePath("/marketing-agent");
+  revalidatePath(`/marketing-agent/${painId}`);
   if ("id" in result) {
     revalidatePath(`/home/briefs/${result.id}`);
+    redirect(`/home/briefs/${result.id}`);
   }
 }

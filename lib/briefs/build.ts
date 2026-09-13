@@ -1,4 +1,8 @@
 import { PAINS } from "@/lib/catalog/data";
+import {
+  breakEvenCpcCopy,
+  landingReadinessNote,
+} from "@/lib/paingraph/paid";
 import type { PainGraph } from "@/lib/paingraph/types";
 
 export const BRIEF_OBJECTIVES = ["traffic", "conversions", "awareness"] as const;
@@ -33,15 +37,28 @@ export function buildCampaignBrief(input: {
   dailyBudget?: string | null;
   objective: BriefObjective;
   productNames: string[];
+  clicks?: number;
+  revenue?: number;
+  conversions?: number;
+  currency?: string;
 }): CampaignBriefBody {
   const pain = PAINS.find((item) => item.id === input.graph.id);
   const phrases = pain?.searchPhrases ?? [];
   const title = input.graph.title.toLowerCase();
-  const direct = unique([title, ...phrases.slice(0, 4), `${title} problem`]);
+  const direct = unique([
+    title,
+    ...phrases.slice(0, 4),
+    `${title} problem`,
+    input.graph.summary.split(/[.!?]/)[0]?.toLowerCase() ?? "",
+  ]);
   const solution = unique([
     `${title} solution`,
     `best ${title}`,
-    ...phrases.map((phrase) => phrase.replace(/\b(hurt|sting|fail|rub)\b/g, "relief")),
+    ...phrases.map((phrase) =>
+      phrase
+        .replace(/\b(don't|do not|does not)\s+(hurt|sting|fail|rub)\b/g, "comfortable")
+        .replace(/\b(hurt|sting|fail|rub)\b/g, "relief"),
+    ),
     "what helps",
   ]);
   const comparison = unique([
@@ -51,7 +68,11 @@ export function buildCampaignBrief(input: {
     ...input.productNames.slice(0, 3).map((name) => `${name} alternative`),
   ]);
   const product = unique(input.productNames.slice(0, 6));
-  const landingHref = input.destinationUrl || input.graph.href;
+  const landing = landingReadinessNote({
+    published: input.graph.status === "published",
+    destinationUrl: input.destinationUrl,
+    publicHref: input.graph.href,
+  });
   const cta =
     input.objective === "conversions"
       ? "See the fit-ranked options"
@@ -89,12 +110,7 @@ export function buildCampaignBrief(input: {
         ? `Draft only. Daily budget target ${input.dailyBudget}. PainGraphs does not launch ads.`
         : "Draft only. PainGraphs does not launch ads.",
     ]),
-    landing: {
-      href: landingHref,
-      note: input.destinationUrl
-        ? "Use the destination you already created. PainGraphs will not invent a HopLink or marketplace search URL."
-        : "Land on the public PainGraph until a real destination exists.",
-    },
+    landing,
     cta,
     policyRisk: input.graph.sensitive
       ? "Sensitive category. Review health and personal-care ad policies before spending."
@@ -104,8 +120,12 @@ export function buildCampaignBrief(input: {
       "Public Check price still goes through /go.",
       "Do not raise fit score because an ad pays more.",
     ],
-    breakEvenCpc:
-      "Not enough conversion economics yet. Break-even CPC waits for revenue per click or a recorded merchant conversion rate.",
+    breakEvenCpc: breakEvenCpcCopy({
+      clicks: input.clicks ?? 0,
+      revenue: input.revenue ?? 0,
+      conversions: input.conversions ?? 0,
+      currency: input.currency,
+    }),
   };
 }
 

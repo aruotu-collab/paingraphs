@@ -1,12 +1,16 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { CampaignBriefForm } from "@/components/campaign-brief-form";
 import { ConversionForm } from "@/components/conversion-form";
 import { DestinationForm } from "@/components/destination-form";
 import { ProgrammeList } from "@/components/programme-list";
 import {
+  clickCounts,
+  conversionTotals,
   listDestinationsForPain,
   productsForPain,
 } from "@/lib/destinations/store";
+import { paidAcquisitionScore } from "@/lib/paingraph/paid";
 import { listAllPainGraphs } from "@/lib/paingraph/queries";
 import { listProgrammesForProducts } from "@/lib/programmes/store";
 
@@ -18,13 +22,27 @@ export default async function MarketingAgentPainPage({
   params: Promise<{ painId: string }>;
 }) {
   const { painId } = await params;
-  const [graphs, products, destinations] = await Promise.all([
+  const [graphs, products, destinations, clicks, revenue] = await Promise.all([
     listAllPainGraphs(),
     productsForPain(painId),
     listDestinationsForPain(painId),
+    clickCounts(),
+    conversionTotals(),
   ]);
   const graph = graphs.find((item) => item.id === painId);
   if (!graph) notFound();
+  const money = revenue.get(painId) ?? { amount: 0, count: 0 };
+  const paid = paidAcquisitionScore({
+    intent: graph.scores.buyingIntent,
+    organic: graph.scores.reachability ?? 0,
+    competition: graph.scores.competition,
+    published: graph.status === "published",
+    destinations: destinations.length,
+    evidenceCount: graph.evidenceCount,
+    revenue: money.amount,
+    clicks: clicks.get(painId) ?? 0,
+    sensitive: graph.sensitive,
+  });
   const programmes = await listProgrammesForProducts(
     products.map((item) => item.id),
   );
@@ -60,14 +78,14 @@ export default async function MarketingAgentPainPage({
       </ol>
       <p className="mt-3 font-mono text-xs text-copper">
         Affiliate {Math.round(graph.scores.affiliate)} · Intent{" "}
-        {Math.round(graph.scores.buyingIntent)} · {graph.status}
+        {Math.round(graph.scores.buyingIntent)} · Ads {paid} · {graph.status}
       </p>
       <div className="mt-4 flex flex-wrap gap-4 text-sm">
         <Link href={graph.href} className="text-copper hover:text-copper-2">
           View public PainGraph
         </Link>
         <Link href="/home/briefs" className="text-copper hover:text-copper-2">
-          Draft a campaign brief
+          All campaign briefs
         </Link>
       </div>
 
@@ -112,6 +130,12 @@ export default async function MarketingAgentPainPage({
         )}
       </section>
       <ConversionForm painId={painId} destinations={destinations} />
+      <div className="mt-10">
+        <CampaignBriefForm
+          painId={painId}
+          defaultDestinationUrl={destinations[0]?.url}
+        />
+      </div>
     </main>
   );
 }

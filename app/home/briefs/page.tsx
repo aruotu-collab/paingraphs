@@ -1,10 +1,8 @@
 import Link from "next/link";
-import { saveCampaignBrief } from "@/lib/briefs/actions";
-import { BRIEF_OBJECTIVES } from "@/lib/briefs/build";
+import { CampaignBriefForm } from "@/components/campaign-brief-form";
 import { listBriefs } from "@/lib/briefs/store";
-import { DESTINATION_COUNTRIES } from "@/lib/destinations/url";
 import { entitlements } from "@/lib/identity/profile";
-import { listPainGraphs } from "@/lib/paingraph/queries";
+import { listAllPainGraphs, listPainGraphs } from "@/lib/paingraph/queries";
 import { getAccess, requireSession } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
@@ -15,7 +13,10 @@ export default async function BriefsPage() {
   const owner = capabilities.admin || capabilities.marketingAgent;
   const access = entitlements(profile, owner);
   const [graphs, briefs] = access.pro
-    ? await Promise.all([listPainGraphs(), listBriefs(session.user.id)])
+    ? await Promise.all([
+        owner ? listAllPainGraphs() : listPainGraphs(),
+        listBriefs(session.user.id),
+      ])
     : [[], []];
 
   return (
@@ -40,68 +41,9 @@ export default async function BriefsPage() {
         </p>
       ) : (
         <>
-          <form
-            action={saveCampaignBrief}
-            autoComplete="off"
-            className="mt-10 grid gap-3 border border-line p-5"
-          >
-            <select
-              name="painId"
-              required
-              className="border border-line bg-transparent px-3 py-2 text-sm text-paper"
-            >
-              <option value="" className="bg-ink">
-                Choose a PainGraph
-              </option>
-              {graphs.map((graph) => (
-                <option key={graph.id} value={graph.id} className="bg-ink">
-                  {graph.title}
-                </option>
-              ))}
-            </select>
-            <div className="grid gap-3 md:grid-cols-3">
-              <select
-                name="market"
-                autoComplete="off"
-                defaultValue="*"
-                className="border border-line bg-transparent px-3 py-2 text-sm text-paper"
-              >
-                {DESTINATION_COUNTRIES.map((row) => (
-                  <option key={row.code} value={row.code} className="bg-ink">
-                    {row.label}
-                  </option>
-                ))}
-              </select>
-              <select
-                name="objective"
-                defaultValue="traffic"
-                className="border border-line bg-transparent px-3 py-2 text-sm text-paper"
-              >
-                {BRIEF_OBJECTIVES.map((value) => (
-                  <option key={value} value={value} className="bg-ink">
-                    {value}
-                  </option>
-                ))}
-              </select>
-              <input
-                name="dailyBudget"
-                placeholder="Daily budget"
-                className="border border-line bg-transparent px-3 py-2 text-sm text-paper"
-              />
-            </div>
-            <input
-              name="destinationUrl"
-              type="url"
-              placeholder="Optional tracking URL you already created"
-              className="border border-line bg-transparent px-3 py-2 text-sm text-paper"
-            />
-            <button
-              type="submit"
-              className="justify-self-start border border-copper px-3 py-2 text-xs uppercase tracking-[0.14em] text-copper hover:bg-copper hover:text-ink"
-            >
-              Generate draft brief
-            </button>
-          </form>
+          <div className="mt-10">
+            <CampaignBriefForm graphs={graphs} />
+          </div>
           <ul className="mt-10">
             {briefs.length === 0 ? (
               <li className="text-sm text-muted">No briefs yet.</li>

@@ -4,23 +4,29 @@ import {
   conversionTotals,
   destinationCounts,
 } from "@/lib/destinations/store";
+import {
+  HIGH_PAID_ACQUISITION,
+  paidAcquisitionScore,
+} from "@/lib/paingraph/paid";
 import { listAllPainGraphs } from "@/lib/paingraph/queries";
 import { ownerMatchesByPain } from "@/lib/products/store";
 import { nextMonetisationAction, programmeCounts } from "@/lib/programmes/store";
 
 export const MONEY_GAPS = [
   "all",
+  "published",
+  "draft",
   "needs-destination",
   "has-clicks",
   "owned",
-  "draft",
-  "published",
+  "high-ads",
 ] as const;
 export type MoneyGap = (typeof MONEY_GAPS)[number];
 
 export const MONEY_SORTS = [
   "affiliate",
   "intent",
+  "ads",
   "clicks",
   "visits",
   "revenue",
@@ -35,6 +41,7 @@ export type MoneyBoardRow = {
   intent: number;
   affiliate: number;
   founder: number;
+  paid: number;
   visits: number;
   programmes: number;
   destinations: number;
@@ -77,6 +84,17 @@ export async function listMoneyBoardRows(
     const clickCount = clicks.get(graph.id) ?? 0;
     const visitCount = visits.get(graph.id) ?? 0;
     const money = revenue.get(graph.id) ?? { amount: 0, count: 0 };
+    const paid = paidAcquisitionScore({
+      intent: graph.scores.buyingIntent,
+      organic: graph.scores.reachability ?? 0,
+      competition: graph.scores.competition,
+      published: graph.status === "published",
+      destinations: destCount,
+      evidenceCount: graph.evidenceCount,
+      revenue: money.amount,
+      clicks: clickCount,
+      sensitive: graph.sensitive,
+    });
     return {
       id: graph.id,
       title: graph.title,
@@ -85,6 +103,7 @@ export async function listMoneyBoardRows(
       intent: Math.round(graph.scores.buyingIntent),
       affiliate: Math.round(graph.scores.affiliate),
       founder: Math.round(graph.scores.founder),
+      paid,
       visits: visitCount,
       programmes: programmes.get(graph.id) ?? 0,
       destinations: destCount,
@@ -101,6 +120,8 @@ export async function listMoneyBoardRows(
         programmes: programmes.get(graph.id) ?? 0,
         clicks: clickCount,
         revenue: money.amount,
+        paidAcquisition: paid,
+        published: graph.status === "published",
       }),
     };
   });
@@ -111,11 +132,13 @@ export async function listMoneyBoardRows(
     if (gap === "owned") return row.owned.length > 0;
     if (gap === "draft") return row.status !== "published";
     if (gap === "published") return row.status === "published";
+    if (gap === "high-ads") return row.paid >= HIGH_PAID_ACQUISITION;
     return true;
   });
 
   return filtered.sort((a, b) => {
     if (sort === "intent") return b.intent - a.intent;
+    if (sort === "ads") return b.paid - a.paid;
     if (sort === "clicks") return b.clicks - a.clicks;
     if (sort === "visits") return b.visits - a.visits;
     if (sort === "revenue") return b.revenue - a.revenue;

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getBrief } from "@/lib/briefs/store";
-import { getPainGraph } from "@/lib/paingraph/queries";
+import { getAnyPainGraph } from "@/lib/paingraph/queries";
 import { requireSession } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
@@ -15,7 +15,7 @@ export default async function BriefPage({
   const { id } = await params;
   const row = await getBrief(id, session.user.id);
   if (!row) notFound();
-  const graph = await getPainGraph(row.painId);
+  const graph = await getAnyPainGraph(row.painId);
   const brief = row.brief;
 
   return (

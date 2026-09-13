@@ -1,8 +1,12 @@
 import { desc, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { campaignBriefs } from "@/lib/db/schema";
-import { productsForPain } from "@/lib/destinations/store";
-import { getPainGraph } from "@/lib/paingraph/queries";
+import {
+  clickCounts,
+  conversionTotals,
+  productsForPain,
+} from "@/lib/destinations/store";
+import { getAnyPainGraph } from "@/lib/paingraph/queries";
 import { ensureWorkspaceTables } from "@/lib/workspace/db";
 import {
   buildCampaignBrief,
@@ -41,11 +45,20 @@ export async function createBrief(input: {
   destinationUrl?: string | null;
   dailyBudget?: string | null;
   objective: BriefObjective;
+  includeDrafts?: boolean;
 }) {
   await ensureWorkspaceTables();
-  const graph = await getPainGraph(input.painId);
+  const graph = await getAnyPainGraph(input.painId);
   if (!graph) return { error: "PainGraph not found." };
-  const products = await productsForPain(input.painId);
+  if (graph.status !== "published" && !input.includeDrafts) {
+    return { error: "PainGraph not found." };
+  }
+  const [products, clicks, revenue] = await Promise.all([
+    productsForPain(input.painId),
+    clickCounts(),
+    conversionTotals(),
+  ]);
+  const money = revenue.get(input.painId) ?? { amount: 0, count: 0 };
   const body = buildCampaignBrief({
     graph,
     country: input.country,
@@ -53,6 +66,9 @@ export async function createBrief(input: {
     dailyBudget: input.dailyBudget,
     objective: input.objective,
     productNames: products.map((item) => item.name),
+    clicks: clicks.get(input.painId) ?? 0,
+    revenue: money.amount,
+    conversions: money.count,
   });
   const id = crypto.randomUUID();
   await db.insert(campaignBriefs).values({

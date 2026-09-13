@@ -40,8 +40,16 @@ export function nextMonetisationAction(input: {
   programmes: number;
   clicks?: number;
   revenue?: number;
+  paidAcquisition?: number | null;
+  published?: boolean;
 }) {
   if ((input.revenue ?? 0) > 0) return "Revenue recorded";
+  if ((input.paidAcquisition ?? 0) >= 70 && input.published === false) {
+    return "Improve landing page";
+  }
+  if ((input.paidAcquisition ?? 0) >= 70 && input.destinations > 0) {
+    return "Build campaign";
+  }
   if ((input.clicks ?? 0) > 0) return "Clicks live";
   if (input.destinations > 0) return "Destination live";
   if (input.programmes > 0) return "Find programme";

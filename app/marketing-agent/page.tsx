@@ -18,11 +18,13 @@ const GAPS: { id: MoneyGap; label: string }[] = [
   { id: "needs-destination", label: "Needs destination" },
   { id: "has-clicks", label: "Has clicks" },
   { id: "owned", label: "Owned product" },
+  { id: "high-ads", label: "High ads" },
 ];
 
 const SORTS: { id: MoneySort; label: string }[] = [
   { id: "affiliate", label: "Affiliate" },
   { id: "intent", label: "Intent" },
+  { id: "ads", label: "Ads" },
   { id: "clicks", label: "Clicks" },
   { id: "visits", label: "Visits" },
   { id: "revenue", label: "Revenue" },
@@ -44,8 +46,9 @@ export default async function MarketingAgentPage({
         How can PainGraphs monetise this demand?
       </h1>
       <p className="mt-4 max-w-2xl text-sm leading-6 text-muted">
-        Public clicks go through /go. EPC only appears after you record a
-        merchant conversion. PainGraphs will not invent revenue.
+        Public clicks go through /go. Ads score uses intent, landing readiness,
+        and recorded economics. EPC and break-even CPC wait for a merchant
+        conversion you log. PainGraphs will not invent search volume or revenue.
       </p>
       <nav className="mt-6 flex flex-wrap gap-2 text-xs uppercase tracking-[0.14em]">
         {GAPS.map((item) => (
@@ -78,13 +81,14 @@ export default async function MarketingAgentPage({
         ))}
       </nav>
       <div className="mt-8 overflow-x-auto">
-        <table className="w-full min-w-[1080px] text-left text-sm">
+        <table className="w-full min-w-[1140px] text-left text-sm">
           <thead className="text-xs uppercase tracking-[0.14em] text-muted">
             <tr>
               <th className="py-2 pr-3">Pain</th>
               <th className="py-2 pr-3">Status</th>
               <th className="py-2 pr-3">Intent</th>
               <th className="py-2 pr-3">Affiliate</th>
+              <th className="py-2 pr-3">Ads</th>
               <th className="py-2 pr-3">Visits</th>
               <th className="py-2 pr-3">Clicks</th>
               <th className="py-2 pr-3">CTR</th>
@@ -97,7 +101,7 @@ export default async function MarketingAgentPage({
           <tbody>
             {board.length === 0 ? (
               <tr className="border-t border-line">
-                <td colSpan={11} className="py-3 text-sm text-muted">
+                <td colSpan={12} className="py-3 text-sm text-muted">
                   Nothing in this filter.
                 </td>
               </tr>
@@ -115,6 +119,7 @@ export default async function MarketingAgentPage({
                   <td className="py-3 pr-3 text-xs text-muted">{row.status}</td>
                   <td className="py-3 pr-3 font-mono">{row.intent}</td>
                   <td className="py-3 pr-3 font-mono">{row.affiliate}</td>
+                  <td className="py-3 pr-3 font-mono">{row.paid}</td>
                   <td className="py-3 pr-3 font-mono">{row.visits}</td>
                   <td className="py-3 pr-3 font-mono">{row.clicks}</td>
                   <td className="py-3 pr-3 font-mono">

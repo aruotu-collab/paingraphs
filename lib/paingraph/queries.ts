@@ -61,6 +61,11 @@ export async function getPainGraph(id: string) {
   return graphs.find((graph) => graph.id === id) ?? null;
 }
 
+export async function getAnyPainGraph(id: string) {
+  const graphs = await listAllPainGraphs();
+  return graphs.find((graph) => graph.id === id) ?? null;
+}
+
 export async function listAllPainGraphs(): Promise<PainGraph[]> {
   return listPainGraphRecords();
 }
