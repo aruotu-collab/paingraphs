@@ -1,9 +1,13 @@
 import { listPainTraffic } from "@/lib/admin/events";
 import {
   clickCounts,
+  clickVisitorCountriesByPain,
   conversionTotals,
   destinationCounts,
+  destinationCountriesByPain,
 } from "@/lib/destinations/store";
+import { parseCountry } from "@/lib/destinations/url";
+import { geographyLens } from "@/lib/geography/arbitrage";
 import {
   HIGH_PAID_ACQUISITION,
   paidAcquisitionScore,
@@ -17,6 +21,7 @@ export const MONEY_GAPS = [
   "published",
   "draft",
   "needs-destination",
+  "country-gap",
   "has-clicks",
   "owned",
   "high-ads",
@@ -51,6 +56,9 @@ export type MoneyBoardRow = {
   epc: number | null;
   ctr: number | null;
   owned: string[];
+  markets: string[];
+  destCountries: string[];
+  geoGap: string[];
   next: string;
 };
 
@@ -64,26 +72,50 @@ export function parseMoneySort(value?: string): MoneySort {
     : "affiliate";
 }
 
+export function parseMoneyCountry(value?: string) {
+  return parseCountry(value || "*");
+}
+
 export async function listMoneyBoardRows(
   gap: MoneyGap,
   sort: MoneySort,
+  country = "*",
 ): Promise<MoneyBoardRow[]> {
-  const [graphs, destinations, programmes, clicks, traffic, owned, revenue] =
-    await Promise.all([
-      listAllPainGraphs(),
-      destinationCounts(),
-      programmeCounts(),
-      clickCounts(),
-      listPainTraffic(),
-      ownerMatchesByPain(),
-      conversionTotals(),
-    ]);
+  const [
+    graphs,
+    destinations,
+    programmes,
+    clicks,
+    traffic,
+    owned,
+    revenue,
+    destCountries,
+    clickCountries,
+  ] = await Promise.all([
+    listAllPainGraphs(),
+    destinationCounts(),
+    programmeCounts(),
+    clickCounts(),
+    listPainTraffic(),
+    ownerMatchesByPain(),
+    conversionTotals(),
+    destinationCountriesByPain(),
+    clickVisitorCountriesByPain(),
+  ]);
   const visits = new Map(traffic.map((row) => [row.id, row.visits]));
+  const visitCountries = new Map(
+    traffic.map((row) => [row.id, row.visitors.map((visitor) => visitor.country)]),
+  );
   const rows = graphs.map((graph) => {
     const destCount = destinations.get(graph.id) ?? 0;
     const clickCount = clicks.get(graph.id) ?? 0;
     const visitCount = visits.get(graph.id) ?? 0;
     const money = revenue.get(graph.id) ?? { amount: 0, count: 0 };
+    const geo = geographyLens({
+      visitCountries: visitCountries.get(graph.id) ?? [],
+      clickCountries: clickCountries.get(graph.id) ?? [],
+      destinationCountries: destCountries.get(graph.id) ?? [],
+    });
     const paid = paidAcquisitionScore({
       intent: graph.scores.buyingIntent,
       organic: graph.scores.reachability ?? 0,
@@ -113,6 +145,9 @@ export async function listMoneyBoardRows(
       epc: clickCount > 0 && money.amount > 0 ? money.amount / clickCount : null,
       ctr: visitCount > 0 ? (clickCount / visitCount) * 100 : null,
       owned: owned.get(graph.id) ?? [],
+      markets: geo.visitors,
+      destCountries: geo.destinations,
+      geoGap: geo.missingDestinations,
       next: nextMonetisationAction({
         affiliateScore: graph.scores.affiliate,
         founderScore: graph.scores.founder,
@@ -122,12 +157,25 @@ export async function listMoneyBoardRows(
         revenue: money.amount,
         paidAcquisition: paid,
         published: graph.status === "published",
+        countryGap: geo.missingDestinations[0] ?? null,
       }),
     };
   });
 
   const filtered = rows.filter((row) => {
+    if (country !== "*") {
+      const inMarket =
+        row.markets.includes(country) ||
+        row.destCountries.includes(country) ||
+        row.geoGap.includes(country);
+      if (!inMarket) return false;
+    }
     if (gap === "needs-destination") return row.destinations === 0;
+    if (gap === "country-gap") {
+      return country === "*"
+        ? row.geoGap.length > 0
+        : row.geoGap.includes(country);
+    }
     if (gap === "has-clicks") return row.clicks > 0;
     if (gap === "owned") return row.owned.length > 0;
     if (gap === "draft") return row.status !== "published";
@@ -146,10 +194,15 @@ export async function listMoneyBoardRows(
   });
 }
 
-export function moneyHref(input: { gap?: MoneyGap; sort?: MoneySort }) {
+export function moneyHref(input: {
+  gap?: MoneyGap;
+  sort?: MoneySort;
+  country?: string;
+}) {
   const params = new URLSearchParams();
   if (input.gap && input.gap !== "all") params.set("gap", input.gap);
   if (input.sort && input.sort !== "affiliate") params.set("sort", input.sort);
+  if (input.country && input.country !== "*") params.set("country", input.country);
   const query = params.toString();
   return query ? `/marketing-agent?${query}` : "/marketing-agent";
 }

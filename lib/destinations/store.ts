@@ -73,6 +73,40 @@ export async function destinationCounts() {
   return counts;
 }
 
+export async function destinationCountriesByPain() {
+  await ensureIdentityTables();
+  const rows = await db
+    .select({
+      painId: affiliateDestinations.painId,
+      country: affiliateDestinations.country,
+    })
+    .from(affiliateDestinations);
+  const map = new Map<string, string[]>();
+  for (const row of rows) {
+    const list = map.get(row.painId) ?? [];
+    list.push(row.country);
+    map.set(row.painId, list);
+  }
+  return map;
+}
+
+export async function clickVisitorCountriesByPain() {
+  await ensureIdentityTables();
+  const rows = await db
+    .select({
+      painId: destinationClicks.painId,
+      visitorCountry: destinationClicks.visitorCountry,
+    })
+    .from(destinationClicks);
+  const map = new Map<string, string[]>();
+  for (const row of rows) {
+    const list = map.get(row.painId) ?? [];
+    list.push(row.visitorCountry ?? "");
+    map.set(row.painId, list);
+  }
+  return map;
+}
+
 export async function clickCounts() {
   await ensureIdentityTables();
   const rows = await db

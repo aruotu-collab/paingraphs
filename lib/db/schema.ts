@@ -815,6 +815,7 @@ export const painGraphScores = sqliteTable("pain_graph_scores", {
   founderScore: real("founder_score"),
   paidAcquisitionScore: real("paid_acquisition_score"),
   confidenceScore: real("confidence_score"),
+  outcomeScore: real("outcome_score"),
   updatedAt: timestamp("updated_at"),
 });
 

@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { painRankSnapshots } from "@/lib/db/schema";
 import { ensureDiscoveryTables } from "@/lib/discovery/db";
@@ -72,6 +72,27 @@ export function previousUtcDay(day: string) {
   const date = new Date(`${day}T00:00:00.000Z`);
   date.setUTCDate(date.getUTCDate() - 1);
   return date.toISOString().slice(0, 10);
+}
+
+export async function rankHistoryFor(
+  painId: string,
+  view: BillboardView,
+  days = 14,
+) {
+  await ensureDiscoveryTables();
+  const rows = await db
+    .select({
+      day: painRankSnapshots.day,
+      rank: painRankSnapshots.rank,
+      score: painRankSnapshots.score,
+    })
+    .from(painRankSnapshots)
+    .where(
+      and(eq(painRankSnapshots.painId, painId), eq(painRankSnapshots.view, view)),
+    )
+    .orderBy(desc(painRankSnapshots.day))
+    .limit(days);
+  return [...rows].reverse();
 }
 
 export async function movementFor(view: BillboardView, painIds: string[]) {

@@ -42,6 +42,7 @@ export function nextMonetisationAction(input: {
   revenue?: number;
   paidAcquisition?: number | null;
   published?: boolean;
+  countryGap?: string | null;
 }) {
   if ((input.revenue ?? 0) > 0) return "Revenue recorded";
   if ((input.paidAcquisition ?? 0) >= 70 && input.published === false) {
@@ -50,6 +51,7 @@ export function nextMonetisationAction(input: {
   if ((input.paidAcquisition ?? 0) >= 70 && input.destinations > 0) {
     return "Build campaign";
   }
+  if (input.countryGap) return `Add ${input.countryGap} destination`;
   if ((input.clicks ?? 0) > 0) return "Clicks live";
   if (input.destinations > 0) return "Destination live";
   if (input.programmes > 0) return "Find programme";

@@ -1,4 +1,5 @@
 import type { painGraphScores, pains } from "@/lib/db/schema";
+import { commercialAffiliateScore } from "./outcomes";
 import type { PainScores } from "./types";
 
 type PainRow = typeof pains.$inferSelect;
@@ -19,13 +20,17 @@ export function scoresFromPain(
     growth: num(snapshot?.growthScore, pain.trend),
     buyingIntent: num(snapshot?.buyingIntentScore, pain.intentScore),
     competition: pain.competitionScore,
-    affiliate: pain.affiliateScore,
+    affiliate: commercialAffiliateScore(
+      pain.affiliateScore,
+      num(snapshot?.outcomeScore, 0),
+    ),
     founder: num(snapshot?.founderScore, pain.productGap),
     recurrence: snapshot?.recurrenceScore ?? null,
     dissatisfaction: snapshot?.dissatisfactionScore ?? null,
     reachability: snapshot?.reachabilityScore ?? pain.organicScore,
     confidence: snapshot?.confidenceScore ?? null,
     paidAcquisition: snapshot?.paidAcquisitionScore ?? null,
+    outcome: snapshot?.outcomeScore ?? null,
   };
 }
 
@@ -47,6 +52,7 @@ export function snapshotFromPain(
     founderScore: pain.productGap,
     paidAcquisitionScore: null,
     confidenceScore: null,
+    outcomeScore: null,
     updatedAt: new Date(),
   };
 }

@@ -29,9 +29,10 @@ export async function ensureIdentityTables() {
   }
   await ready;
   if (!extras) {
-    extras = tryExecute(
-      "ALTER TABLE user_profiles ADD COLUMN stripe_cancel_at INTEGER",
-    );
+    extras = Promise.all([
+      tryExecute("ALTER TABLE user_profiles ADD COLUMN stripe_cancel_at INTEGER"),
+      tryExecute("ALTER TABLE pain_graph_scores ADD COLUMN outcome_score REAL"),
+    ]).then(() => undefined);
   }
   await extras;
 }

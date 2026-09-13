@@ -118,5 +118,9 @@ export async function saveConversion(formData: FormData) {
     entityId: painId,
     metadata: { amount, currency, destinationId: destinationId || null },
   });
+  const { recalculatePainScores } = await import("@/lib/paingraph/recalc");
+  await recalculatePainScores();
   await revalidateDestinationPaths(painId);
+  revalidatePath("/top-pains");
+  revalidatePath("/admin/rankings");
 }

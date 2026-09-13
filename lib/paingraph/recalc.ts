@@ -6,6 +6,7 @@ import {
   destinationCounts,
 } from "@/lib/destinations/store";
 import { painGraphScores, painSignals, pains } from "@/lib/db/schema";
+import { outcomeScore } from "./outcomes";
 import { clampScore, paidAcquisitionScore } from "./paid";
 import { isInformativeQuote } from "./quotes";
 
@@ -36,6 +37,12 @@ export async function recalculatePainScores() {
     const demand = clampScore(20 + evidence * 12);
     const confidence = clampScore(30 + evidence * 10 + diversity * 8);
     const money = revenue.get(pain.id) ?? { amount: 0, count: 0 };
+    const clicksForPain = clicks.get(pain.id) ?? 0;
+    const outcome = outcomeScore({
+      clicks: clicksForPain,
+      revenue: money.amount,
+      conversions: money.count,
+    });
     const paid = paidAcquisitionScore({
       intent: pain.intentScore,
       organic: pain.organicScore,
@@ -44,7 +51,7 @@ export async function recalculatePainScores() {
       destinations: destinations.get(pain.id) ?? 0,
       evidenceCount: evidence,
       revenue: money.amount,
-      clicks: clicks.get(pain.id) ?? 0,
+      clicks: clicksForPain,
       sensitive: pain.sensitive,
     });
     const now = new Date();
@@ -59,6 +66,7 @@ export async function recalculatePainScores() {
         founderScore: pain.productGap,
         paidAcquisitionScore: paid,
         confidenceScore: confidence,
+        outcomeScore: outcome,
         updatedAt: now,
       })
       .onConflictDoUpdate({
@@ -67,6 +75,7 @@ export async function recalculatePainScores() {
           demandScore: demand,
           paidAcquisitionScore: paid,
           confidenceScore: confidence,
+          outcomeScore: outcome,
           updatedAt: now,
         },
       });

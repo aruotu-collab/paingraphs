@@ -6,13 +6,18 @@ import { DestinationForm } from "@/components/destination-form";
 import { ProgrammeList } from "@/components/programme-list";
 import {
   clickCounts,
+  clickVisitorCountriesByPain,
   conversionTotals,
   listDestinationsForPain,
   productsForPain,
 } from "@/lib/destinations/store";
+import { geographyLens } from "@/lib/geography/arbitrage";
+import { formatCountryCodes } from "@/lib/geography/codes";
+import { visitCountriesForPath } from "@/lib/geography/store";
 import { paidAcquisitionScore } from "@/lib/paingraph/paid";
 import { listAllPainGraphs } from "@/lib/paingraph/queries";
 import { listProgrammesForProducts } from "@/lib/programmes/store";
+import { rankHistoryFor } from "@/lib/ranks/snapshots";
 
 export const dynamic = "force-dynamic";
 
@@ -22,15 +27,22 @@ export default async function MarketingAgentPainPage({
   params: Promise<{ painId: string }>;
 }) {
   const { painId } = await params;
-  const [graphs, products, destinations, clicks, revenue] = await Promise.all([
-    listAllPainGraphs(),
-    productsForPain(painId),
-    listDestinationsForPain(painId),
-    clickCounts(),
-    conversionTotals(),
-  ]);
+  const [graphs, products, destinations, clicks, revenue, painHistory, affiliateHistory] =
+    await Promise.all([
+      listAllPainGraphs(),
+      productsForPain(painId),
+      listDestinationsForPain(painId),
+      clickCounts(),
+      conversionTotals(),
+      rankHistoryFor(painId, "pain", 7),
+      rankHistoryFor(painId, "affiliate", 7),
+    ]);
   const graph = graphs.find((item) => item.id === painId);
   if (!graph) notFound();
+  const [visitCountries, clickCountries] = await Promise.all([
+    visitCountriesForPath(graph.href),
+    clickVisitorCountriesByPain(),
+  ]);
   const money = revenue.get(painId) ?? { amount: 0, count: 0 };
   const paid = paidAcquisitionScore({
     intent: graph.scores.buyingIntent,
@@ -46,6 +58,12 @@ export default async function MarketingAgentPainPage({
   const programmes = await listProgrammesForProducts(
     products.map((item) => item.id),
   );
+  const geo = geographyLens({
+    visitCountries,
+    clickCountries: clickCountries.get(painId) ?? [],
+    destinationCountries: destinations.map((row) => row.country),
+    programmeCountries: programmes.map((row) => row.country),
+  });
   const destinationsByProduct = new Map<string, typeof destinations>();
   for (const destination of destinations) {
     const existing = destinationsByProduct.get(destination.productId) ?? [];
@@ -78,7 +96,11 @@ export default async function MarketingAgentPainPage({
       </ol>
       <p className="mt-3 font-mono text-xs text-copper">
         Affiliate {Math.round(graph.scores.affiliate)} · Intent{" "}
-        {Math.round(graph.scores.buyingIntent)} · Ads {paid} · {graph.status}
+        {Math.round(graph.scores.buyingIntent)} · Ads {paid}
+        {graph.scores.outcome
+          ? ` · Outcome +${Math.round(graph.scores.outcome)}`
+          : ""}{" "}
+        · {graph.status}
       </p>
       <div className="mt-4 flex flex-wrap gap-4 text-sm">
         <Link href={graph.href} className="text-copper hover:text-copper-2">
@@ -87,7 +109,31 @@ export default async function MarketingAgentPainPage({
         <Link href="/home/briefs" className="text-copper hover:text-copper-2">
           All campaign briefs
         </Link>
+        <Link
+          href={`/admin/rankings/${painId}`}
+          className="text-copper hover:text-copper-2"
+        >
+          Rank history
+        </Link>
       </div>
+      {painHistory.length > 0 || affiliateHistory.length > 0 ? (
+        <p className="mt-4 max-w-2xl text-xs leading-5 text-muted">
+          Pain ranks{" "}
+          {painHistory.map((row) => `#${row.rank}`).join(" → ") || "—"}
+          . Affiliate ranks{" "}
+          {affiliateHistory.map((row) => `#${row.rank}`).join(" → ") || "—"}
+          . From daily snapshots, not invented traffic.
+        </p>
+      ) : null}
+      <p className="mt-3 max-w-2xl text-xs leading-5 text-muted">
+        Visitors {formatCountryCodes(geo.visitors)}. Country destinations{" "}
+        {formatCountryCodes(geo.destinations)}
+        {geo.hasDefaultDestination ? " plus a default URL" : ""}.
+        {geo.missingDestinations.length > 0
+          ? ` Missing ${formatCountryCodes(geo.missingDestinations)} destination.`
+          : " No country gap from recorded visitors."}{" "}
+        Headers only — not invented search volume.
+      </p>
 
       <section className="mt-10 space-y-6">
         {products.length === 0 ? (

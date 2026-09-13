@@ -11,6 +11,7 @@ export type PainScores = {
   reachability: number | null;
   confidence: number | null;
   paidAcquisition: number | null;
+  outcome: number | null;
 };
 
 export type PainGraph = {

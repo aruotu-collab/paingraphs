@@ -35,8 +35,8 @@ export default async function AdminRankingsPage({
     <main className="pb-16">
       <h1 className="mt-8 font-display text-4xl">Rankings</h1>
       <p className="mt-4 max-w-2xl text-sm leading-6 text-muted">
-        Daily snapshots power movement on the Billboard. Run ingest to capture
-        today if the job has not run yet.
+        Daily snapshots power movement on the Billboard. Open a pain for the
+        last two weeks. Run ingest to capture today if the job has not run yet.
       </p>
       <nav className="mt-6 flex flex-wrap gap-2 text-xs uppercase tracking-[0.14em]">
         {VIEWS.map((item) => (
@@ -76,7 +76,12 @@ export default async function AdminRankingsPage({
             >
               <p className="text-sm">
                 <span className="font-mono text-copper">#{index + 1}</span>{" "}
-                {graph.title}
+                <Link
+                  href={`/admin/rankings/${graph.id}?view=${view}`}
+                  className="text-copper hover:text-copper-2"
+                >
+                  {graph.title}
+                </Link>
               </p>
               <p className="font-mono text-xs text-muted">{label}</p>
             </li>

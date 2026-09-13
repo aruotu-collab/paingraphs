@@ -1,8 +1,11 @@
 import Link from "next/link";
+import { DESTINATION_COUNTRIES } from "@/lib/destinations/url";
+import { formatCountryCodes } from "@/lib/geography/codes";
 import {
   formatMoney,
   listMoneyBoardRows,
   moneyHref,
+  parseMoneyCountry,
   parseMoneyGap,
   parseMoneySort,
   type MoneyGap,
@@ -16,6 +19,7 @@ const GAPS: { id: MoneyGap; label: string }[] = [
   { id: "published", label: "Published" },
   { id: "draft", label: "Draft" },
   { id: "needs-destination", label: "Needs destination" },
+  { id: "country-gap", label: "Country gap" },
   { id: "has-clicks", label: "Has clicks" },
   { id: "owned", label: "Owned product" },
   { id: "high-ads", label: "High ads" },
@@ -33,12 +37,13 @@ const SORTS: { id: MoneySort; label: string }[] = [
 export default async function MarketingAgentPage({
   searchParams,
 }: {
-  searchParams: Promise<{ gap?: string; sort?: string }>;
+  searchParams: Promise<{ gap?: string; sort?: string; country?: string }>;
 }) {
   const query = await searchParams;
   const gap = parseMoneyGap(query.gap);
   const sort = parseMoneySort(query.sort);
-  const board = await listMoneyBoardRows(gap, sort);
+  const country = parseMoneyCountry(query.country);
+  const board = await listMoneyBoardRows(gap, sort, country);
 
   return (
     <main className="pb-16">
@@ -47,14 +52,15 @@ export default async function MarketingAgentPage({
       </h1>
       <p className="mt-4 max-w-2xl text-sm leading-6 text-muted">
         Public clicks go through /go. Ads score uses intent, landing readiness,
-        and recorded economics. EPC and break-even CPC wait for a merchant
-        conversion you log. PainGraphs will not invent search volume or revenue.
+        and recorded economics. Country gaps use visitor or /go country headers
+        against destinations you pasted. A default URL does not close a country
+        gap. PainGraphs will not invent search volume or revenue.
       </p>
       <nav className="mt-6 flex flex-wrap gap-2 text-xs uppercase tracking-[0.14em]">
         {GAPS.map((item) => (
           <Link
             key={item.id}
-            href={moneyHref({ gap: item.id, sort })}
+            href={moneyHref({ gap: item.id, sort, country })}
             className={
               gap === item.id
                 ? "border border-copper px-3 py-1.5 text-copper"
@@ -69,7 +75,7 @@ export default async function MarketingAgentPage({
         {SORTS.map((item) => (
           <Link
             key={item.id}
-            href={moneyHref({ gap, sort: item.id })}
+            href={moneyHref({ gap, sort: item.id, country })}
             className={
               sort === item.id
                 ? "border border-copper px-3 py-1.5 text-copper"
@@ -80,8 +86,23 @@ export default async function MarketingAgentPage({
           </Link>
         ))}
       </nav>
+      <nav className="mt-3 flex flex-wrap gap-2 text-xs uppercase tracking-[0.14em]">
+        {DESTINATION_COUNTRIES.map((item) => (
+          <Link
+            key={item.code}
+            href={moneyHref({ gap, sort, country: item.code })}
+            className={
+              country === item.code
+                ? "border border-copper px-3 py-1.5 text-copper"
+                : "border border-line px-3 py-1.5 text-muted hover:border-copper hover:text-copper"
+            }
+          >
+            {item.code === "*" ? "Any country" : item.code}
+          </Link>
+        ))}
+      </nav>
       <div className="mt-8 overflow-x-auto">
-        <table className="w-full min-w-[1140px] text-left text-sm">
+        <table className="w-full min-w-[1280px] text-left text-sm">
           <thead className="text-xs uppercase tracking-[0.14em] text-muted">
             <tr>
               <th className="py-2 pr-3">Pain</th>
@@ -94,6 +115,8 @@ export default async function MarketingAgentPage({
               <th className="py-2 pr-3">CTR</th>
               <th className="py-2 pr-3">Revenue</th>
               <th className="py-2 pr-3">EPC</th>
+              <th className="py-2 pr-3">Markets</th>
+              <th className="py-2 pr-3">Gap</th>
               <th className="py-2 pr-3">Destinations</th>
               <th className="py-2">Next</th>
             </tr>
@@ -101,8 +124,10 @@ export default async function MarketingAgentPage({
           <tbody>
             {board.length === 0 ? (
               <tr className="border-t border-line">
-                <td colSpan={12} className="py-3 text-sm text-muted">
-                  Nothing in this filter.
+                <td colSpan={14} className="py-3 text-sm text-muted">
+                  {gap === "country-gap"
+                    ? "No visitor country yet without a matching destination. Gaps appear after real visits or /go clicks with a country header."
+                    : "Nothing in this filter."}
                 </td>
               </tr>
             ) : (
@@ -130,6 +155,12 @@ export default async function MarketingAgentPage({
                   </td>
                   <td className="py-3 pr-3 font-mono">
                     {row.epc == null ? "—" : formatMoney(row.epc)}
+                  </td>
+                  <td className="py-3 pr-3 text-xs text-muted">
+                    {formatCountryCodes(row.markets)}
+                  </td>
+                  <td className="py-3 pr-3 text-xs text-muted">
+                    {formatCountryCodes(row.geoGap)}
                   </td>
                   <td className="py-3 pr-3 font-mono">{row.destinations}</td>
                   <td className="py-3 text-muted">{row.next}</td>
