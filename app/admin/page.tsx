@@ -72,6 +72,9 @@ export default async function AdminPage() {
         <Link href="/admin/pains" className="text-copper hover:text-copper-2">
           Publication
         </Link>
+        <Link href="/admin/seo" className="text-copper hover:text-copper-2">
+          SEO freshness
+        </Link>
         <Link href="/admin/health" className="text-copper hover:text-copper-2">
           Site health
         </Link>

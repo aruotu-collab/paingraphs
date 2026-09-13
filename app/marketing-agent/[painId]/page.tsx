@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ConversionForm } from "@/components/conversion-form";
 import { DestinationForm } from "@/components/destination-form";
 import { ProgrammeList } from "@/components/programme-list";
 import {
@@ -110,6 +111,7 @@ export default async function MarketingAgentPainPage({
           })
         )}
       </section>
+      <ConversionForm painId={painId} destinations={destinations} />
     </main>
   );
 }

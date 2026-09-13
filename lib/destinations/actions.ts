@@ -7,7 +7,12 @@ import { categories, painClusters, pains, productFits } from "@/lib/db/schema";
 import { writeAuditLog } from "@/lib/identity/audit";
 import { painHref } from "@/lib/paingraph/path";
 import { requireMarketingAgent } from "@/lib/session";
-import { deleteDestination, upsertDestination } from "./store";
+import {
+  deleteDestination,
+  listDestinationsForPain,
+  recordConversion,
+  upsertDestination,
+} from "./store";
 import { parseCountry, parseDestinationUrl } from "./url";
 
 async function assertFit(painId: string, productId: string) {
@@ -79,6 +84,39 @@ export async function clearDestination(formData: FormData) {
     entityType: "pain",
     entityId: painId,
     metadata: { productId, country },
+  });
+  await revalidateDestinationPaths(painId);
+}
+
+export async function saveConversion(formData: FormData) {
+  const { session } = await requireMarketingAgent("/marketing-agent");
+  const painId = String(formData.get("painId") || "");
+  const destinationId = String(formData.get("destinationId") || "").trim();
+  const amount = Number(formData.get("amount"));
+  const currency = String(formData.get("currency") || "GBP")
+    .trim()
+    .toUpperCase()
+    .slice(0, 3);
+  const note = String(formData.get("note") || "").trim().slice(0, 240);
+  if (!painId || !Number.isFinite(amount) || amount <= 0) return;
+  if (destinationId) {
+    const destinations = await listDestinationsForPain(painId);
+    if (!destinations.some((item) => item.id === destinationId)) return;
+  }
+  await recordConversion({
+    painId,
+    destinationId: destinationId || null,
+    amount,
+    currency: /^[A-Z]{3}$/.test(currency) ? currency : "GBP",
+    note: note || null,
+    actorUserId: session.user.id,
+  });
+  await writeAuditLog({
+    actorUserId: session.user.id,
+    action: "conversion_recorded",
+    entityType: "pain",
+    entityId: painId,
+    metadata: { amount, currency, destinationId: destinationId || null },
   });
   await revalidateDestinationPaths(painId);
 }

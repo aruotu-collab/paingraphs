@@ -674,6 +674,30 @@ export const destinationClicks = sqliteTable(
   ],
 );
 
+export const destinationConversions = sqliteTable(
+  "destination_conversions",
+  {
+    id: text("id").primaryKey(),
+    destinationId: text("destination_id").references(() => affiliateDestinations.id, {
+      onDelete: "set null",
+    }),
+    painId: text("pain_id")
+      .notNull()
+      .references(() => pains.id, { onDelete: "cascade" }),
+    amount: real("amount").notNull(),
+    currency: text("currency").notNull().default("GBP"),
+    note: text("note"),
+    actorUserId: text("actor_user_id").references(() => user.id, {
+      onDelete: "set null",
+    }),
+    createdAt: timestamp("created_at"),
+  },
+  (table) => [
+    index("destination_conversions_pain_idx").on(table.painId),
+    index("destination_conversions_destination_idx").on(table.destinationId),
+  ],
+);
+
 export const memberDestinations = sqliteTable(
   "member_destinations",
   {

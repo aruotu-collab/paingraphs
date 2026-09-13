@@ -39,7 +39,9 @@ export function nextMonetisationAction(input: {
   destinations: number;
   programmes: number;
   clicks?: number;
+  revenue?: number;
 }) {
+  if ((input.revenue ?? 0) > 0) return "Revenue recorded";
   if ((input.clicks ?? 0) > 0) return "Clicks live";
   if (input.destinations > 0) return "Destination live";
   if (input.programmes > 0) return "Find programme";
