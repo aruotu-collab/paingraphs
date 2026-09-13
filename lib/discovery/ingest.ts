@@ -14,30 +14,45 @@ import { snapshotCatalogPrices } from "@/lib/prices/store";
 import { extractSignal, parseExtraction } from "./extract";
 import { ingestLicensedFeeds } from "./feed";
 import { ensureDiscoveryTables } from "./db";
+import { extractSignalsWithOpenAI, openaiConfigured } from "./openai";
 import {
   addDiscoverySignal,
   clusterScore,
   createCandidate,
+  extractionIsOpenAI,
   findSignalByFingerprint,
+  listDiscardedSignals,
   listDiscoverySources,
   listPendingSignals,
   markSignals,
   markSourceIngested,
   matchExistingPain,
   recordIngestRun,
+  saveSignalExtraction,
   seedDiscoverySources,
 } from "./store";
 import { fingerprint } from "./text";
 
 const CLUSTER_THRESHOLD = 0.62;
 
-export async function runDiscoveryIngest() {
+function openaiPriority(sourceId: string) {
+  if (sourceId === "src-cpsc-recalls") return 0;
+  if (sourceId === "src-owner-manual") return 1;
+  return 2;
+}
+
+export async function runDiscoveryIngest(options?: {
+  forceFeeds?: boolean;
+  reopenDiscarded?: boolean;
+}) {
   const startedAt = new Date();
   await ensureDiscoveryTables();
   await seedDiscoverySources();
 
   const sources = await listDiscoverySources();
-  const feeds = await ingestLicensedFeeds(sources);
+  const feeds = await ingestLicensedFeeds(sources, {
+    ignoreFrequency: options?.forceFeeds,
+  });
   const prices = await snapshotCatalogPrices();
   for (const change of prices.changes) {
     await notifyPriceChange({
@@ -48,7 +63,37 @@ export async function runDiscoveryIngest() {
     });
   }
   const graphs = await listPainGraphs();
+  if (options?.reopenDiscarded) {
+    const discarded = await listDiscardedSignals(40);
+    const reopen = discarded
+      .filter((row) => !extractionIsOpenAI(row.extractedJson))
+      .slice(0, 16);
+    await markSignals(
+      reopen.map((row) => row.id),
+      { status: "new" },
+    );
+  }
   const pending = await listPendingSignals();
+  let openaiReviewed = 0;
+  if (openaiConfigured() && pending.length > 0) {
+    const fresh = pending
+      .filter((row) => !extractionIsOpenAI(row.extractedJson))
+      .sort((left, right) => openaiPriority(left.sourceId) - openaiPriority(right.sourceId));
+    const extracted = await extractSignalsWithOpenAI(
+      fresh.slice(0, 24).map((row) => ({
+        id: row.id,
+        sourceId: row.sourceId,
+        rawText: row.rawText,
+      })),
+    );
+    for (const signal of fresh) {
+      const next = extracted.get(signal.id);
+      if (!next) continue;
+      await saveSignalExtraction(signal.id, next);
+      signal.extractedJson = JSON.stringify(next);
+      openaiReviewed += 1;
+    }
+  }
   let matched = 0;
   let created = 0;
   let clustered = 0;
@@ -174,7 +219,7 @@ export async function runDiscoveryIngest() {
       founderOpportunity: extracted.founderOpportunity,
       affiliateOpportunity: extracted.affiliateOpportunity,
       relatedPainId: related?.id ?? null,
-      origin: "ingest",
+      origin: extracted.extractor === "openai" ? "openai" : "ingest",
       sourceId: signal.sourceId,
       quote: extracted.painStatement || signal.rawText,
       quoteLabel: "Discovery signal",
@@ -216,6 +261,7 @@ export async function runDiscoveryIngest() {
     discarded,
     duplicates,
     extracted: pending.length,
+    openaiReviewed,
     feeds,
     prices,
     scores: scores.updated,
@@ -223,7 +269,7 @@ export async function runDiscoveryIngest() {
     alerts,
     schedule: "daily 06:00 UTC",
     reason:
-      "Licensed feeds, structured extraction, clustering, score recalc, and rank snapshots. No web crawl. Nothing auto-publishes.",
+      "Licensed feeds, structured extraction, optional OpenAI review of those texts, clustering, score recalc, and rank snapshots. No web crawl. Nothing auto-publishes.",
   };
   await recordIngestRun({ ok: true, summary, startedAt });
   return summary;

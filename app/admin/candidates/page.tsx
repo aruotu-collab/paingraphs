@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { OpenAIExtractButton } from "@/components/openai-extract-button";
+import { openaiConfigured } from "@/lib/discovery/openai";
 import { listCandidates } from "@/lib/discovery/store";
 
 export const dynamic = "force-dynamic";
@@ -6,9 +8,15 @@ export const dynamic = "force-dynamic";
 export default async function AdminCandidatesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string }>;
+  searchParams: Promise<{
+    status?: string;
+    openai?: string;
+    reviewed?: string;
+    discarded?: string;
+  }>;
 }) {
   const query = await searchParams;
+  const openaiReady = openaiConfigured();
   const status =
     query.status === "new" ||
     query.status === "watch" ||
@@ -30,8 +38,22 @@ export default async function AdminCandidatesPage({
       <h1 className="mt-8 font-display text-4xl">Candidate pain queue</h1>
       <p className="mt-4 max-w-2xl text-sm leading-6 text-muted">
         New pains stay here until you approve, merge, watch, or reject them.
-        Nothing auto-publishes.
+        OpenAI only rereads licensed feed text you already pulled. It cannot
+        invent a complaint, HopLink, or published page.
       </p>
+      {query.openai === "missing" ? (
+        <p className="mt-3 text-sm text-muted">
+          OPENAI_API_KEY is not set in this environment.
+        </p>
+      ) : query.openai ? (
+        <p className="mt-3 text-sm text-muted">
+          OpenAI pass created {query.openai} new candidate
+          {query.openai === "1" ? "" : "s"}
+          {query.reviewed ? ` · reviewed ${query.reviewed} licensed texts` : ""}
+          {query.discarded ? ` · discarded ${query.discarded}` : ""}. Review
+          before anything is published.
+        </p>
+      ) : null}
       <nav className="mt-6 flex flex-wrap gap-2 text-xs uppercase tracking-[0.14em]">
         {[
           ["", "Open"],
@@ -60,6 +82,7 @@ export default async function AdminCandidatesPage({
         >
           Add a candidate
         </Link>
+        <OpenAIExtractButton configured={openaiReady} />
       </nav>
       <ul className="mt-8">
         {rows.length === 0 ? (

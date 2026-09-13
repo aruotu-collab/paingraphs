@@ -63,7 +63,9 @@ export default async function AdminHealthPage() {
               {String(summary.matched ?? 0)} · clustered {String(summary.clustered ?? 0)}{" "}
               · created {String(summary.created ?? 0)} · discarded{" "}
               {String(summary.discarded ?? 0)} · duplicates{" "}
-              {String(summary.duplicates ?? 0)} · scores {String(summary.scores ?? 0)}
+              {String(summary.duplicates ?? 0)} · openai{" "}
+              {String(summary.openaiReviewed ?? 0)} · scores{" "}
+              {String(summary.scores ?? 0)}
             </p>
             {feeds ? (
               <p className="mt-2 font-mono text-xs text-muted">

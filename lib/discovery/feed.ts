@@ -182,6 +182,7 @@ export async function ingestLicensedFeeds(
     lastIngestedAt?: Date | null;
     frequencyHours: number;
   }[],
+  options?: { ignoreFrequency?: boolean },
 ) {
   let fetched = 0;
   let queued = 0;
@@ -193,7 +194,11 @@ export async function ingestLicensedFeeds(
     if (source.accessMethod !== "api" && source.accessMethod !== "feed") continue;
     if (!source.feedUrl) continue;
     const wait = (source.frequencyHours || 24) * 60 * 60 * 1000;
-    if (source.lastIngestedAt && now - source.lastIngestedAt.getTime() < wait) {
+    if (
+      !options?.ignoreFrequency &&
+      source.lastIngestedAt &&
+      now - source.lastIngestedAt.getTime() < wait
+    ) {
       continue;
     }
     const result = await fetchLicensedFeed(source.feedUrl);

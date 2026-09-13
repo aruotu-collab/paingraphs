@@ -5,10 +5,13 @@ import { usePathname } from "next/navigation";
 
 const LINKS = [
   { href: "/marketing-agent", label: "Money Board" },
+  { href: "/marketing-agent/providers", label: "Providers" },
   { href: "/marketing-agent/products", label: "Owned products" },
   { href: "/home/briefs", label: "Campaign briefs" },
   { href: "/admin", label: "Admin" },
 ] as const;
+
+const BOARD_ONLY = ["/marketing-agent/products", "/marketing-agent/providers"];
 
 export function MarketingNav() {
   const current = usePathname() || "/marketing-agent";
@@ -19,7 +22,7 @@ export function MarketingNav() {
           link.href === "/marketing-agent"
             ? current === "/marketing-agent" ||
               (current.startsWith("/marketing-agent/") &&
-                !current.startsWith("/marketing-agent/products"))
+                !BOARD_ONLY.some((path) => current.startsWith(path)))
             : current === link.href || current.startsWith(`${link.href}/`);
         return (
           <Link

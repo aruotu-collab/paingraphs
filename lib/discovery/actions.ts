@@ -2,6 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { runDiscoveryIngest } from "@/lib/discovery/ingest";
+import { openaiConfigured } from "@/lib/discovery/openai";
 import { resolvePlacement } from "@/lib/catalog/placements";
 import { requireAdmin } from "@/lib/session";
 import {
@@ -164,6 +166,21 @@ export async function saveDiscoverySource(formData: FormData) {
   });
   revalidatePath("/admin/sources");
   revalidatePath("/admin/health");
+}
+
+export async function extractOpenAICandidates() {
+  await requireAdmin("/admin/candidates");
+  if (!openaiConfigured()) {
+    redirect("/admin/candidates?openai=missing");
+  }
+  const summary = await runDiscoveryIngest({
+    forceFeeds: true,
+    reopenDiscarded: true,
+  });
+  revalidateOwner();
+  redirect(
+    `/admin/candidates?openai=${summary.created}&reviewed=${summary.openaiReviewed}&discarded=${summary.discarded}`,
+  );
 }
 
 export async function submitDiscoverySignal(formData: FormData) {

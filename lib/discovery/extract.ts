@@ -26,6 +26,7 @@ export type ExtractedSignal = {
   confidence: number;
   noise: boolean;
   reason: string;
+  extractor?: "regex" | "openai";
 };
 
 const PAIN_CUES = [

@@ -282,7 +282,36 @@ export async function listPendingSignals() {
   return db
     .select()
     .from(discoverySignals)
-    .where(eq(discoverySignals.status, "new"));
+    .where(eq(discoverySignals.status, "new"))
+    .orderBy(desc(discoverySignals.createdAt));
+}
+
+export async function listDiscardedSignals(limit = 40) {
+  await ensureDiscoveryTables();
+  return db
+    .select()
+    .from(discoverySignals)
+    .where(eq(discoverySignals.status, "discarded"))
+    .orderBy(desc(discoverySignals.createdAt))
+    .limit(limit);
+}
+
+export function extractionIsOpenAI(value: string | null | undefined) {
+  return Boolean(value?.includes('"extractor":"openai"'));
+}
+
+export async function saveSignalExtraction(
+  id: string,
+  extracted: ReturnType<typeof extractSignal>,
+) {
+  await db
+    .update(discoverySignals)
+    .set({
+      extractedJson: JSON.stringify(extracted),
+      extractedAt: new Date(),
+      confidence: extracted.confidence,
+    })
+    .where(eq(discoverySignals.id, id));
 }
 
 export async function listCandidates(status?: CandidateStatus) {
@@ -390,7 +419,7 @@ export async function createCandidate(input: {
       id: crypto.randomUUID(),
       candidateId: id,
       rawQuote: quote,
-      sourceKind: input.origin === "ingest" ? "ingest" : "manual",
+      sourceKind: input.origin === "manual" ? "manual" : "ingest",
       sourceLabel: input.quoteLabel || "Owner note",
       sourceUrl: input.quoteUrl ?? null,
       createdAt: now,
