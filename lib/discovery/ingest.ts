@@ -29,7 +29,7 @@ import {
 } from "./store";
 import { fingerprint } from "./text";
 
-const CLUSTER_THRESHOLD = 0.4;
+const CLUSTER_THRESHOLD = 0.62;
 
 export async function runDiscoveryIngest() {
   const startedAt = new Date();
@@ -66,6 +66,7 @@ export async function runDiscoveryIngest() {
         rawText: signal.rawText,
         persona: signal.persona,
         geography: signal.geography,
+        sourceId: signal.sourceId,
         lenient: signal.sourceId === "src-owner-manual",
       });
     const print = signal.fingerprint || fingerprint(signal.rawText);

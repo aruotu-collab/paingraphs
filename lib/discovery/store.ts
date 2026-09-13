@@ -1,4 +1,5 @@
 import { desc, eq, inArray } from "drizzle-orm";
+import { getPlacement } from "@/lib/catalog/placements";
 import { db } from "@/lib/db";
 import {
   discoverySignals,
@@ -6,10 +7,12 @@ import {
   ingestRuns,
   painCandidateSignals,
   painCandidates,
+  painGraphScores,
   painSignals,
   pains,
 } from "@/lib/db/schema";
 import { writeAuditLog } from "@/lib/identity/audit";
+import { snapshotFromPain } from "@/lib/paingraph/scores";
 import { extractSignal } from "./extract";
 import { fingerprint, similarity, slugify } from "./text";
 import { ensureDiscoveryTables } from "./db";
@@ -234,6 +237,7 @@ export async function addDiscoverySignal(input: {
     rawText: input.rawText,
     persona: input.persona,
     geography: input.geography,
+    sourceId: input.sourceId,
     lenient: input.sourceId === "src-owner-manual",
   });
   const id = crypto.randomUUID();
@@ -473,6 +477,81 @@ export async function attachSignalsToPain(candidateId: string, painId: string) {
   return signals.length;
 }
 
+export async function materializeCandidatePain(input: {
+  candidateId: string;
+  clusterId: string;
+  publish?: boolean;
+  reviewNote?: string | null;
+  actorUserId?: string | null;
+}) {
+  const candidate = await getCandidate(input.candidateId);
+  if (!candidate) return { error: "Candidate not found." };
+  if (candidate.status === "approved" && candidate.painId) {
+    return { ok: true as const, painId: candidate.painId, already: true };
+  }
+  const placement = await getPlacement(input.clusterId);
+  if (!placement) return { error: "Cluster not found." };
+  const { category, cluster } = placement;
+  const slug = await uniquePainSlug(cluster.id, candidate.title);
+  const now = new Date();
+  const painId = `cand-${candidate.id.slice(0, 12)}`;
+  const severity = candidate.severity ?? 60;
+  const intent = candidate.buyingIntent ?? 55;
+  const founder = candidate.founderOpportunity ?? 60;
+  const affiliate = candidate.affiliateOpportunity ?? 40;
+  await db.insert(pains).values({
+    id: painId,
+    clusterId: cluster.id,
+    slug,
+    title: candidate.title,
+    h1: candidate.title,
+    problem: candidate.problem,
+    analysis: candidate.problem,
+    whyNow: null,
+    strategy: "What usually helps is still being mapped from evidence.",
+    stage: 1,
+    painScore: severity,
+    intentScore: intent,
+    competitionScore: 50,
+    productGap: founder,
+    affiliateScore: affiliate,
+    organicScore: 40,
+    opportunity: Math.round((severity + intent + founder) / 3),
+    trend: 50,
+    sensitive: false,
+    status: input.publish ? "published" : "draft",
+    updatedAt: now,
+  });
+  await db.insert(painGraphScores).values(
+    snapshotFromPain(
+      {
+        id: painId,
+        trend: 50,
+        intentScore: intent,
+        organicScore: 40,
+        productGap: founder,
+      },
+      candidate.evidenceCount,
+    ),
+  );
+  await attachSignalsToPain(candidate.id, painId);
+  await setCandidateStatus({
+    id: candidate.id,
+    status: "approved",
+    painId,
+    relatedPainId: candidate.relatedPainId,
+    reviewNote: input.reviewNote,
+    actorUserId: input.actorUserId,
+  });
+  return {
+    ok: true as const,
+    painId,
+    already: false,
+    category,
+    cluster,
+  };
+}
+
 export async function markSignals(
   ids: string[],
   patch: {
@@ -573,6 +652,19 @@ export function clusterScore(
   if (extracted.clusterSlug && extracted.clusterSlug === candidate.clusterSlug) {
     score += 0.08;
   }
+  if (isRecallTitle(extracted.title) && isRecallTitle(candidate.title)) {
+    const left = recallBrand(extracted.title);
+    const right = recallBrand(candidate.title);
+    if (left && right && similarity(left, right) < 0.45) return 0;
+  }
   return score;
+}
+
+function isRecallTitle(value: string) {
+  return /\brecalls?\b/i.test(value);
+}
+
+function recallBrand(value: string) {
+  return value.split(/\brecalls?\b/i)[0]?.trim() || value;
 }
 

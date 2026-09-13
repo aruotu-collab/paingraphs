@@ -3,9 +3,6 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { resolvePlacement } from "@/lib/catalog/placements";
-import { db } from "@/lib/db";
-import { painGraphScores, pains } from "@/lib/db/schema";
-import { snapshotFromPain } from "@/lib/paingraph/scores";
 import { requireAdmin } from "@/lib/session";
 import {
   ACCESS_METHODS,
@@ -16,8 +13,8 @@ import {
   attachSignalsToPain,
   createCandidate,
   getCandidate,
+  materializeCandidatePain,
   setCandidateStatus,
-  uniquePainSlug,
   upsertDiscoverySource,
 } from "./store";
 import { publicFeedUrl } from "./feed";
@@ -111,10 +108,8 @@ export async function mergeCandidate(formData: FormData) {
 export async function approveCandidate(formData: FormData) {
   const { session } = await requireAdmin("/admin/candidates");
   const id = String(formData.get("candidateId") ?? "");
-  const publish = String(formData.get("publish") ?? "") === "1";
   const candidate = await getCandidate(id);
   if (!candidate) return;
-  if (candidate.status === "approved" && candidate.painId) return;
 
   const placement = await resolvePlacement({
     clusterId: optionalText(formData.get("clusterId")),
@@ -123,59 +118,17 @@ export async function approveCandidate(formData: FormData) {
     fallbackClusterSlug: candidate.clusterSlug,
   });
   if ("error" in placement) return;
-  const { category, cluster } = placement;
-  const slug = await uniquePainSlug(cluster.id, candidate.title);
-  const now = new Date();
-  const painId = `cand-${id.slice(0, 12)}`;
-  const severity = candidate.severity ?? 60;
-  const intent = candidate.buyingIntent ?? 55;
-  const founder = candidate.founderOpportunity ?? 60;
-  const affiliate = candidate.affiliateOpportunity ?? 40;
-  await db.insert(pains).values({
-    id: painId,
-    clusterId: cluster.id,
-    slug,
-    title: candidate.title,
-    h1: candidate.title,
-    problem: candidate.problem,
-    analysis: candidate.problem,
-    whyNow: null,
-    strategy: "What usually helps is still being mapped from evidence.",
-    stage: 1,
-    painScore: severity,
-    intentScore: intent,
-    competitionScore: 50,
-    productGap: founder,
-    affiliateScore: affiliate,
-    organicScore: 40,
-    opportunity: Math.round((severity + intent + founder) / 3),
-    trend: 50,
-    sensitive: false,
-    status: publish ? "published" : "draft",
-    updatedAt: now,
-  });
-  const snapshot = snapshotFromPain({
-    id: painId,
-    trend: 50,
-    intentScore: intent,
-    organicScore: 40,
-    productGap: founder,
-  }, candidate.evidenceCount);
-  await db.insert(painGraphScores).values(snapshot);
-  await attachSignalsToPain(id, painId);
-  await setCandidateStatus({
-    id,
-    status: "approved",
-    painId,
-    relatedPainId: candidate.relatedPainId,
+  const result = await materializeCandidatePain({
+    candidateId: id,
+    clusterId: placement.cluster.id,
+    publish: String(formData.get("publish") ?? "") === "1",
     reviewNote: optionalText(formData.get("reviewNote"), 800),
     actorUserId: session.user.id,
   });
+  if ("error" in result) return;
   revalidateOwner();
-  if (category) {
-    revalidatePath(`/${category.slug}`);
-    revalidatePath(`/${category.slug}/${cluster.slug}`);
-  }
+  revalidatePath(`/${placement.category.slug}`);
+  revalidatePath(`/${placement.category.slug}/${placement.cluster.slug}`);
 }
 
 export async function saveDiscoverySource(formData: FormData) {

@@ -151,32 +151,69 @@ const CLUSTER_CUES: { slug: string; categorySlug: string; cues: string[] }[] = [
   {
     slug: "headphones",
     categorySlug: "electronics",
-    cues: ["headphone", "headset", "earcup", "over-ear", "on-ear", "temple", "glasses"],
+    cues: ["headphone", "headset", "earcup", "over-ear", "on-ear"],
   },
   {
     slug: "discreet-protection",
     categorySlug: "personal-care",
-    cues: ["incontinence", "bladder", "rustle", "pad", "underwear", "leak"],
+    cues: ["incontinence", "bladder leak", "rustle", "underwear"],
   },
   {
     slug: "sunscreen",
     categorySlug: "skincare",
-    cues: ["sunscreen", "spf", "sting", "white cast", "uv"],
+    cues: ["sunscreen", "spf", "white cast"],
   },
   {
     slug: "vacuum",
     categorySlug: "home",
-    cues: ["vacuum", "hoover", "pet hair", "too loud"],
+    cues: ["vacuum", "hoover", "pet hair"],
   },
   {
     slug: "all-day-fit",
     categorySlug: "shoes",
-    cues: ["shoe", "blister", "insole", "standing", "heel"],
+    cues: ["shoe", "blister", "insole"],
+  },
+  {
+    slug: "desk-back",
+    categorySlug: "personal-care",
+    cues: ["office chair", "desk chair", "lumbar", "lower back"],
+  },
+  {
+    slug: "recalls",
+    categorySlug: "product-safety",
+    cues: ["recall", "fall hazard", "choking hazard", "tip-over"],
   },
 ];
 
+const FORUM_SOURCES = new Set(["src-hn-ask", "src-se-softwarerecs"]);
+const CONSUMER_PRODUCT_CUES = [
+  "headphone",
+  "earbud",
+  "sunscreen",
+  "vacuum",
+  "hoover",
+  "shoe",
+  "insole",
+  "bra",
+  "office chair",
+  "mattress",
+  "jean",
+  "deodorant",
+  "incontinence",
+  "recall",
+];
+
+function cuePattern(cue: string) {
+  const escaped = cue.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  if (cue.includes(" ")) return new RegExp(escaped, "i");
+  if (["injur", "irritat", "disappoint"].includes(cue)) {
+    return new RegExp(`\\b${escaped}`, "i");
+  }
+  return new RegExp(`\\b${escaped}\\b`, "i");
+}
+
 function hasCue(haystack: string, cues: string[]) {
-  return cues.some((cue) => haystack.includes(cue));
+  return cues.some((cue) => cuePattern(cue).test(haystack));
 }
 
 function firstMatchingSentence(text: string, test: (sentence: string) => boolean) {
@@ -211,18 +248,24 @@ function mentionFrom(text: string, lower: string) {
 
 function placeFrom(lower: string) {
   for (const cluster of CLUSTER_CUES) {
-    if (cluster.cues.some((cue) => lower.includes(cue))) {
+    if (hasCue(lower, cluster.cues)) {
       return cluster;
     }
   }
   for (const cluster of CLUSTERS) {
-    if (lower.includes(cluster.name.toLowerCase()) || lower.includes(cluster.slug)) {
+    if (
+      cuePattern(cluster.name.toLowerCase()).test(lower) ||
+      cuePattern(cluster.slug).test(lower)
+    ) {
       const category = CATEGORIES.find((item) => item.id === cluster.categoryId);
       return { slug: cluster.slug, categorySlug: category?.slug ?? "" };
     }
   }
   for (const category of CATEGORIES) {
-    if (lower.includes(category.name.toLowerCase()) || lower.includes(category.slug)) {
+    if (
+      cuePattern(category.name.toLowerCase()).test(lower) ||
+      cuePattern(category.slug).test(lower)
+    ) {
       return { slug: "", categorySlug: category.slug };
     }
   }
@@ -233,22 +276,27 @@ export function extractSignal(input: {
   rawText: string;
   persona?: string | null;
   geography?: string | null;
+  sourceId?: string | null;
   lenient?: boolean;
 }): ExtractedSignal {
   const raw = clip(input.rawText, 4000);
   const lower = normalizeText(raw);
   const words = contentTokenList(raw);
   const spam = hasCue(lower, SPAM_CUES) || (raw.match(/https?:\/\//g) ?? []).length > 2;
-  const painHits = PAIN_CUES.filter((cue) => lower.includes(cue)).length;
+  const painHits = PAIN_CUES.filter((cue) => cuePattern(cue).test(lower)).length;
   const seeking = hasCue(lower, SEEKING_CUES);
+  const consumerProduct = hasCue(lower, CONSUMER_PRODUCT_CUES);
+  const forumNoise =
+    Boolean(input.sourceId && FORUM_SOURCES.has(input.sourceId)) && !consumerProduct;
   const noise =
     words.length < 4 ||
     spam ||
+    forumNoise ||
     (painHits === 0 && !seeking && !input.lenient && raw.length < 40);
 
   const painStatement =
     firstMatchingSentence(raw, (sentence) =>
-      PAIN_CUES.some((cue) => sentence.toLowerCase().includes(cue)),
+      PAIN_CUES.some((cue) => cuePattern(cue).test(sentence)),
     ) || raw.replace(/\s+/g, " ").trim().slice(0, 280);
 
   const workaround =
@@ -363,9 +411,11 @@ export function extractSignal(input: {
     reason: noise
       ? spam
         ? "Promotional or link-heavy text."
-        : painHits === 0
-          ? "No pain language found."
-          : "Too little usable text."
+        : forumNoise
+          ? "Forum or software-rec text is not a consumer product pain."
+          : painHits === 0
+            ? "No pain language found."
+            : "Too little usable text."
       : "Extracted from the permitted signal only.",
   };
 }
