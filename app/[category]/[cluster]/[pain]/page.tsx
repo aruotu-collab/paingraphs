@@ -10,6 +10,7 @@ import { headers } from "next/headers";
 import { geoFromHeaders } from "@/lib/admin/visits";
 import { getPainGraphPage } from "@/lib/paingraph/queries";
 import { visibleUnmetNeed } from "@/lib/paingraph/rank";
+import { getSavedPriorities } from "@/lib/recommendations/store";
 import { getSession } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
@@ -42,6 +43,13 @@ export default async function PainGraphPage({
   if (!page) notFound();
   const session = await getSession();
   const saved = (await listSavedPainIds()).includes(page.id);
+  const savedPriorities = session
+    ? await getSavedPriorities(
+        session.user.id,
+        page.id,
+        page.criteria.map((item) => item.slug),
+      )
+    : null;
   const watching = session
     ? await watchedPriceIds(session.user.id, page.id)
     : new Set<string>();
@@ -138,6 +146,10 @@ export default async function PainGraphPage({
 
       <div className="mt-12">
         <PainRecommend
+          painId={page.id}
+          href={page.href}
+          signedIn={Boolean(session)}
+          savedPriorities={savedPriorities}
           criteria={page.criteria}
           products={page.products}
           consumer={page.consumer}
@@ -170,7 +182,8 @@ export default async function PainGraphPage({
         <p className="mt-3 text-sm leading-6 text-muted">
           Save the pain to follow updates. You will see them on member home
           when evidence, products, or a public Check price destination change.
-          Email is off until you turn it on.
+          Recommendation sliders can be saved separately above. Email is off
+          until you turn it on.
         </p>
         <div className="mt-4">
           <SavePainButton

@@ -1028,6 +1028,27 @@ export const savedSearches = sqliteTable(
   (table) => [index("saved_searches_user_idx").on(table.userId)],
 );
 
+export const recommendationPreferences = sqliteTable(
+  "recommendation_preferences",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    painId: text("pain_id")
+      .notNull()
+      .references(() => pains.id, { onDelete: "cascade" }),
+    prioritiesJson: text("priorities_json").notNull(),
+    updatedAt: timestamp("updated_at"),
+  },
+  (table) => [
+    uniqueIndex("recommendation_preferences_user_pain_idx").on(
+      table.userId,
+      table.painId,
+    ),
+  ],
+);
+
 export const productPrices = sqliteTable(
   "product_prices",
   {

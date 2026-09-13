@@ -122,4 +122,16 @@ async function createTables() {
     "ALTER TABLE alert_preferences ADD COLUMN email_search_updates INTEGER NOT NULL DEFAULT 0",
   );
   await tryExecute("ALTER TABLE discovery_sources ADD COLUMN feed_url TEXT");
+  await db.run(sql`
+    CREATE TABLE IF NOT EXISTS recommendation_preferences (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES user(id) ON DELETE CASCADE,
+      pain_id TEXT NOT NULL REFERENCES pains(id) ON DELETE CASCADE,
+      priorities_json TEXT NOT NULL,
+      updated_at INTEGER NOT NULL
+    )
+  `);
+  await tryExecute(
+    "CREATE UNIQUE INDEX IF NOT EXISTS recommendation_preferences_user_pain_idx ON recommendation_preferences (user_id, pain_id)",
+  );
 }

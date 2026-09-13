@@ -137,3 +137,50 @@ export function applyPriorities(page: PainGraphPage, priorities: Priorities): Pa
     products: rankProducts(page.products, priorities),
   };
 }
+
+export function comparisonRows(
+  products: RecommendedProduct[],
+  criteria: PainCriterion[],
+) {
+  return [
+    {
+      key: "match",
+      name: "Match",
+      values: products.map((product) => product.match),
+    },
+    ...criteria.map((item) => ({
+      key: item.slug,
+      name: item.name,
+      values: products.map((product) => product.scores[item.slug] ?? 0),
+    })),
+  ];
+}
+
+export function rankingReasons(
+  products: RecommendedProduct[],
+  criteria: PainCriterion[],
+  priorities: Priorities,
+) {
+  const [best, next] = rankProducts(products, priorities);
+  if (!best || !next) return [];
+  return criteria
+    .map((item) => {
+      const weight = priorities[item.slug] ?? 0;
+      const bestScore = best.scores[item.slug] ?? 0;
+      const nextScore = next.scores[item.slug] ?? 0;
+      return {
+        name: item.name,
+        weight,
+        bestName: best.name,
+        nextName: next.name,
+        bestScore,
+        nextScore,
+        delta: bestScore - nextScore,
+      };
+    })
+    .filter((row) => row.weight > 0 && row.delta > 0)
+    .sort(
+      (a, b) => Math.abs(b.delta) * b.weight - Math.abs(a.delta) * a.weight,
+    )
+    .slice(0, 3);
+}
