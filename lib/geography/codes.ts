@@ -11,7 +11,7 @@ const ALIASES: Record<string, string> = {
   UNITEDSTATES: "US",
 };
 
-const KNOWN = new Set(
+const KNOWN = new Set<string>(
   DESTINATION_COUNTRIES.filter((row) => row.code !== "*").map((row) => row.code),
 );
 
