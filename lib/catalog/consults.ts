@@ -3,7 +3,7 @@ import type { CatalogConsumerIntel } from "./types";
 export const PAIN_CONSUMERS: Record<string, CatalogConsumerIntel> = {
   "pain-quiet": {
     opening:
-      "The fear is that someone hears it. Tap an answer, or drag a slider. I just need to know how it feels for you.",
+      "It rustles when you sit or walk. Tap an answer, or drag a slider. I just need to know how it feels for you.",
     whyItHappens:
       "Plastic on the outside rustles when you walk, sit, or use paper nearby. Cloth is quieter. A bigger, more absorbent pad is usually louder and easier to see. Quiet and maximum capacity pull in opposite directions.",
     triedFirst: [

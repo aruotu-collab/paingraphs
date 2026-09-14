@@ -699,14 +699,14 @@ export const PAINS: CatalogPain[] = [
     id: "pain-quiet",
     clusterId: "cl-discreet",
     slug: "quiet",
-    title: "Quiet incontinence underwear",
-    h1: "Quiet incontinence protection for people who care about discretion",
+    title: "Protection that does not rustle",
+    h1: "Protection that does not rustle when you sit or walk",
     problem:
-      "Plastic-backed products rustle when you walk, sit, or use a bathroom. The fear is detection, not just leakage.",
+      "Plastic on the outside rustles when you walk, sit, or use paper nearby. Someone might hear it. A bigger pack is often louder, not quieter.",
     analysis:
-      "Quietness is a materials problem: outer film vs cloth, pad wings vs shaped underwear, and how the product moves at the hip. Absorbency and silence trade off. Ranking ‘#1 overall’ hides that. A cloth-backed underwear cut is usually quieter than a plastic pad; a max-absorb guard is usually louder and more visible.",
+      "The sound is the outside: plastic film rustles, cloth does not. A bigger, more absorbent pad is usually louder and easier to see. Quiet and maximum capacity pull in opposite directions. Cloth-backed underwear is usually the quietest everyday option. A max-absorb guard lasts longer and often gives you away.",
     whyNow:
-      "Search language is shifting from ‘adult nappy’ to ‘discreet’, ‘quiet’, and ‘doesn’t show’ — people are shopping the fear, not the clinical category.",
+      "This hits people who need to sit, walk, or travel without it giving them away — not only overnight.",
     strategy: "affiliate now → validate own product later",
     stage: 4,
     painScore: 93,
@@ -769,7 +769,7 @@ export const PAINS: CatalogPain[] = [
       {
         productId: "prod-max-absorb",
         scores: { noise: 48, bulk: 40, absorbency: 94, comfort: 62, price: 55 },
-        note: "Wins capacity. Often loses discretion.",
+        note: "Lasts longer. Often the loudest and the easiest to see.",
       },
     ],
     signals: [

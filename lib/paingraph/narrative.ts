@@ -24,13 +24,13 @@ const SEEDS: Record<string, PainNarrative> = {
     turn: "The next choice is not better headphones. It is which tradeoff you can live with.",
   },
   "pain-quiet": {
-    hook: "The leak is not the only fear. Plastic-backed products rustle when you walk, sit, or use a bathroom. Detection is the problem.",
+    hook: "You sit down, and the pack talks. Plastic on the outside rustles. Someone might hear it. Lasting longer is not the same as staying quiet.",
     scene:
-      "Search language has moved from a clinical category to discreet, quiet, and does not show. People are shopping the sound, not the absorbency chart.",
+      "It happens in a chair, on a train, or in a quiet room. Paper nearby makes it worse. The pack that said it was the most absorbent is often the loudest.",
     mechanism:
-      "Quietness is a materials problem: outer film versus cloth, pad wings versus shaped underwear, and how the product moves at the hip. Absorbency and silence trade off. A cloth-backed cut is usually quieter. A max-absorb guard is usually louder and more visible.",
+      "Plastic on the outside rustles. Cloth does not. A bigger pad is usually louder and easier to see. Quiet and maximum capacity pull in opposite directions.",
     failedLoop:
-      "People buy the pack that ranks first overall, then discover the film gives them away under work trousers.",
+      "People buy the biggest pack, then hear it when they sit down. A higher price does not make it quieter.",
     trap: "The last pack rustled because the outside was plastic. A bigger size does not make it quieter.",
     turn: "Start with the quietest everyday cut, then decide if you can live with less capacity.",
   },
