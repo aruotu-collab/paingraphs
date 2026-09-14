@@ -38,8 +38,10 @@ export function countryLabel(code: string | null | undefined) {
   return match?.label ?? code ?? "Default / any country";
 }
 
-export function goHref(destinationId: string) {
-  return `/go/${destinationId}`;
+export function goHref(destinationId: string, from?: string | null) {
+  const path = `/go/${destinationId}`;
+  if (!from || !from.startsWith("/") || from.startsWith("//")) return path;
+  return `${path}?from=${encodeURIComponent(from.slice(0, 240))}`;
 }
 
 export function pickPublicDestination<

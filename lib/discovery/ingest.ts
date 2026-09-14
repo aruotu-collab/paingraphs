@@ -75,9 +75,18 @@ export async function runDiscoveryIngest(options?: {
   }
   const pending = await listPendingSignals();
   let openaiReviewed = 0;
+  const openaiLooks: {
+    title: string;
+    reason: string;
+    noise: boolean;
+    already: string | null;
+  }[] = [];
   if (openaiConfigured() && pending.length > 0) {
     const fresh = pending
-      .filter((row) => !extractionIsOpenAI(row.extractedJson))
+      .filter(
+        (row) =>
+          options?.reopenDiscarded || !extractionIsOpenAI(row.extractedJson),
+      )
       .sort((left, right) => openaiPriority(left.sourceId) - openaiPriority(right.sourceId));
     const extracted = await extractSignalsWithOpenAI(
       fresh.slice(0, 24).map((row) => ({
@@ -92,6 +101,16 @@ export async function runDiscoveryIngest(options?: {
       await saveSignalExtraction(signal.id, next);
       signal.extractedJson = JSON.stringify(next);
       openaiReviewed += 1;
+      const hit = next.noise ? null : matchExistingPain(next, graphs).match;
+      const already = hit
+        ? graphs.find((graph) => graph.id === hit.id)?.title ?? null
+        : null;
+      openaiLooks.push({
+        title: next.title,
+        reason: next.reason,
+        noise: next.noise,
+        already,
+      });
     }
   }
   let matched = 0;
@@ -262,6 +281,7 @@ export async function runDiscoveryIngest(options?: {
     duplicates,
     extracted: pending.length,
     openaiReviewed,
+    openaiLooks: openaiLooks.slice(0, 12),
     feeds,
     prices,
     scores: scores.updated,

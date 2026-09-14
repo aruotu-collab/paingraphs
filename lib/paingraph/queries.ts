@@ -16,6 +16,7 @@ import { informativeQuotes, isInformativeQuote } from "@/lib/paingraph/quotes";
 import { listDestinationsForPain } from "@/lib/destinations/store";
 import { goHref, pickPublicDestination } from "@/lib/destinations/url";
 import { consumerIntelFor } from "./consumer";
+import { narrativeFor } from "./narrative-store";
 import { painHref } from "./path";
 import { scoresFromPain } from "./scores";
 import type { PainGraph, PainGraphPage } from "./types";
@@ -167,7 +168,7 @@ export async function getPainGraphPage(
       scores,
       note: fit.note,
       match: average(Object.values(scores)),
-      destinationUrl: destination ? goHref(destination.id) : null,
+      destinationUrl: destination ? goHref(destination.id, graph.href) : null,
     };
   });
 
@@ -176,6 +177,14 @@ export async function getPainGraphPage(
     name: row.name,
     detail: row.detail,
   }));
+  const consumer = consumerIntelFor(
+    PAINS.find((pain) => pain.id === graph.id)?.consumer,
+    graph.explanation,
+    graph.whyNow,
+    mappedCriteria,
+  );
+  const rankedProducts = productCards.sort((a, b) => b.match - a.match);
+  const lead = rankedProducts[0];
 
   return {
     ...graph,
@@ -187,14 +196,19 @@ export async function getPainGraphPage(
         url: row.sourceUrl,
       })),
     ),
-    products: productCards.sort((a, b) => b.match - a.match),
+    products: rankedProducts,
     related: relatedGraphs(graph, graphs),
-    consumer: consumerIntelFor(
-      PAINS.find((pain) => pain.id === graph.id)?.consumer,
-      graph.explanation,
-      graph.whyNow,
-      mappedCriteria,
-    ),
+    consumer,
+    narrative: await narrativeFor({
+      id: graph.id,
+      h1: graph.h1,
+      summary: graph.summary,
+      explanation: graph.explanation,
+      whyNow: graph.whyNow,
+      consumer,
+      productName: lead?.name,
+      productNote: lead?.note,
+    }),
   };
 }
 

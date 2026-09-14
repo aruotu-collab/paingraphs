@@ -141,6 +141,20 @@ export const pains = sqliteTable(
   (table) => [uniqueIndex("pains_cluster_slug_idx").on(table.clusterId, table.slug)],
 );
 
+export const painNarratives = sqliteTable("pain_narratives", {
+  painId: text("pain_id")
+    .primaryKey()
+    .references(() => pains.id, { onDelete: "cascade" }),
+  hook: text("hook").notNull(),
+  scene: text("scene").notNull(),
+  mechanism: text("mechanism").notNull(),
+  failedLoop: text("failed_loop").notNull(),
+  trap: text("trap").notNull(),
+  turn: text("turn").notNull(),
+  origin: text("origin").notNull(),
+  updatedAt: timestamp("updated_at"),
+});
+
 export const painSignals = sqliteTable(
   "pain_signals",
   {
@@ -1130,4 +1144,8 @@ export const painRelations = relations(pains, ({ one, many }) => ({
   signals: many(painSignals),
   criteria: many(criteria),
   fits: many(productFits),
+  narrative: one(painNarratives, {
+    fields: [pains.id],
+    references: [painNarratives.painId],
+  }),
 }));

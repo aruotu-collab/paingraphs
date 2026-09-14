@@ -56,21 +56,31 @@ export type PainEvidence = {
   url: string | null;
 };
 
+export type DiagnosticControl = "choice" | "list" | "slider" | "multi";
+
 export type DiagnosticOption = {
   id: string;
   label: string;
   emphasize: string[];
   factors: string[];
   profileLabel: string;
+  hear?: string;
+  nextAsk?: string;
 };
 
 export type DiagnosticQuestion = {
   id: string;
   prompt: string;
+  ask?: string;
+  chart?: string;
+  control?: DiagnosticControl;
+  sliderLow?: string;
+  sliderHigh?: string;
   options: DiagnosticOption[];
 };
 
 export type ConsumerIntel = {
+  opening: string | null;
   whyItHappens: string;
   triedFirst: string[];
   usuallyFails: string[];
@@ -81,12 +91,22 @@ export type ConsumerIntel = {
   diagnostic: DiagnosticQuestion[];
 };
 
+export type PainNarrative = {
+  hook: string;
+  scene: string;
+  mechanism: string;
+  failedLoop: string;
+  trap: string;
+  turn: string;
+};
+
 export type PainGraphPage = PainGraph & {
   criteria: PainCriterion[];
   evidence: PainEvidence[];
   products: RecommendedProduct[];
   related: PainGraph[];
   consumer: ConsumerIntel;
+  narrative: PainNarrative;
 };
 
 export type Priorities = Record<string, number>;

@@ -56,21 +56,31 @@ export type CatalogFit = {
   note: string;
 };
 
+export type CatalogDiagnosticControl = "choice" | "list" | "slider" | "multi";
+
 export type CatalogDiagnosticOption = {
   id: string;
   label: string;
   emphasize: string[];
   factors: string[];
   profileLabel: string;
+  hear?: string;
+  nextAsk?: string;
 };
 
 export type CatalogDiagnosticQuestion = {
   id: string;
   prompt: string;
+  ask?: string;
+  chart?: string;
+  control?: CatalogDiagnosticControl;
+  sliderLow?: string;
+  sliderHigh?: string;
   options: CatalogDiagnosticOption[];
 };
 
 export type CatalogConsumerIntel = {
+  opening?: string | null;
   whyItHappens: string;
   triedFirst: string[];
   usuallyFails: string[];

@@ -1,441 +1,292 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
+import { PainConsult, versionLine } from "@/components/pain-consult";
 import {
-  comparisonRows,
+  consultOpening,
+  consultQuestions,
+  consultSpec,
+  consultTurns,
+} from "@/lib/paingraph/consult";
+import {
   focusWeights,
   normalizePriorities,
-  presetsFor,
   productAttributes,
-  rankingReasons,
   rankProducts,
 } from "@/lib/paingraph/rank";
-import { saveRecommendationPreferences } from "@/lib/recommendations/actions";
 import type {
   ConsumerIntel,
   DiagnosticOption,
+  DiagnosticQuestion,
   PainCriterion,
   Priorities,
   RecommendedProduct,
 } from "@/lib/paingraph/types";
 
 export function PainRecommend({
-  painId,
-  href,
-  signedIn,
+  h1,
   savedPriorities,
   criteria,
   products,
   consumer,
-  evidenceCount,
+  closeLine,
+  after,
 }: {
-  painId: string;
-  href: string;
-  signedIn: boolean;
+  h1: string;
   savedPriorities: Priorities | null;
   criteria: PainCriterion[];
   products: RecommendedProduct[];
   consumer: ConsumerIntel;
-  evidenceCount: number;
+  closeLine: string | null;
+  after?: ReactNode;
 }) {
-  const router = useRouter();
   const slugs = criteria.map((item) => item.slug);
-  const presets = presetsFor(slugs);
-  const questions = consumer.diagnostic;
+  const questions = useMemo(() => consultQuestions(consumer), [consumer]);
+  const opening = consultOpening(h1, consumer);
   const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [skipped, setSkipped] = useState(false);
   const [weights, setWeights] = useState<Priorities>(() =>
-    normalizePriorities(savedPriorities ?? {}, slugs),
+    defaultWeights(savedPriorities, slugs),
   );
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(Boolean(savedPriorities));
 
-  const selected = questions
-    .map((question) =>
-      question.options.find((option) => option.id === answers[question.id]),
-    )
-    .filter((option): option is DiagnosticOption => Boolean(option));
-  const diagnosticReady = questions.length > 0 && selected.length === questions.length;
-  const profileLabel = selected.map((option) => option.profileLabel).join(" · ");
-  const factors = unique(
-    selected.flatMap((option) => option.factors).filter(Boolean),
-  ).slice(0, 4);
+  const turns = consultTurns(questions, answers);
+  const heard =
+    !skipped && questions.length > 0 && turns.length === questions.length;
+  const ready = skipped || heard || questions.length === 0;
+  const version = versionLine(turns);
 
   const ranked = useMemo(
     () => rankProducts(products, normalizePriorities(weights, slugs)),
     [products, weights, slugs],
   );
-  const [best, ...rest] = ranked;
+  const best = ranked[0] ?? null;
+  const spec = turns.length > 0 ? consultSpec(turns) : [];
+  const needed = unique(turns.flatMap((turn) => turn.option.emphasize));
+  const fits = best
+    ? ranked.filter((product) => productFitsSpec(product, best, needed))
+    : [];
 
-  function choose(questionId: string, option: DiagnosticOption) {
-    const next = { ...answers, [questionId]: option.id };
+  function applyAnswers(next: Record<string, string>) {
     setAnswers(next);
-    const picked = questions
-      .map((question) =>
-        question.options.find((item) => item.id === next[question.id]),
-      )
-      .filter((item): item is DiagnosticOption => Boolean(item));
-    if (picked.length !== questions.length) return;
-    const emphasize = unique(picked.flatMap((item) => item.emphasize));
-    setWeights(focusWeights(slugs, emphasize));
-    setSaved(false);
-  }
-
-  function setSlug(slug: string, value: number) {
-    setWeights((current) => normalizePriorities({ ...current, [slug]: value }, slugs));
-    setSaved(false);
-  }
-
-  async function savePreferences() {
-    if (!signedIn) {
-      router.push(`/login?next=${encodeURIComponent(href)}`);
+    const picked = consultTurns(questions, next).map((turn) => turn.option);
+    if (picked.length === 0) {
+      setWeights(defaultWeights(savedPriorities, slugs));
       return;
     }
-    setSaving(true);
-    await saveRecommendationPreferences(painId, slugs, weights, href);
-    setSaved(true);
-    setSaving(false);
+    const emphasize = unique(picked.flatMap((item) => item.emphasize));
+    setWeights(focusWeights(slugs, emphasize));
+  }
+
+  function choose(question: DiagnosticQuestion, option: DiagnosticOption) {
+    const index = questions.findIndex((item) => item.id === question.id);
+    const next = { ...answers, [question.id]: option.id };
+    for (let i = index + 1; i < questions.length; i += 1) {
+      delete next[questions[i].id];
+    }
+    applyAnswers(next);
+  }
+
+  function undo() {
+    const last = [...questions].reverse().find((question) => answers[question.id]);
+    if (!last) return;
+    revisit(last);
+  }
+
+  function revisit(question: DiagnosticQuestion) {
+    setSkipped(false);
+    const index = questions.findIndex((item) => item.id === question.id);
+    if (index < 0) return;
+    const next = { ...answers };
+    for (let i = index; i < questions.length; i += 1) {
+      delete next[questions[i].id];
+    }
+    applyAnswers(next);
   }
 
   return (
     <div className="space-y-12">
-      {questions.length > 0 ? (
-        <section>
-          <h2 className="font-display text-3xl">Quick diagnostic</h2>
-          <p className="mt-3 max-w-2xl text-sm leading-6 text-muted">
-            Two questions. The sliders below move to match your version of this
-            pain. You can still change them.
-          </p>
-          <div className="mt-6 space-y-8">
-            {questions.map((question) => (
-              <div key={question.id}>
-                <p className="text-sm text-paper">{question.prompt}</p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {question.options.map((option) => {
-                    const active = answers[question.id] === option.id;
-                    return (
-                      <button
-                        key={option.id}
-                        type="button"
-                        onClick={() => choose(question.id, option)}
-                        className={
-                          active
-                            ? "border border-copper px-3 py-1.5 text-sm text-copper"
-                            : "border border-line px-3 py-1.5 text-sm text-muted hover:border-copper hover:text-copper"
-                        }
-                      >
-                        {option.label}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
-          </div>
-          {diagnosticReady ? (
-            <div className="mt-6 max-w-2xl border border-copper p-5">
-              <p className="text-xs uppercase tracking-[0.16em] text-copper">
-                Your pain profile
-              </p>
-              <p className="mt-2 font-display text-2xl">{profileLabel}</p>
-              {factors.length > 0 ? (
-                <>
-                  <p className="mt-4 text-sm text-paper">
-                    The most important factors for you are likely:
-                  </p>
-                  <ul className="mt-2 space-y-1 text-sm text-muted">
-                    {factors.map((factor) => (
-                      <li key={factor}>{factor}</li>
+      <PainConsult
+        opening={opening}
+        questions={questions}
+        answers={answers}
+        trap={closeLine}
+        skipped={skipped}
+        onChoose={choose}
+        onUndo={undo}
+        onRevisit={revisit}
+        onSkip={() => setSkipped(true)}
+        onResume={() => setSkipped(false)}
+      />
+
+      {ready ? (
+        <>
+          {best ? (
+            <>
+              <section id="start-here" className="scroll-mt-28 max-w-2xl">
+                <h2 className="font-display text-3xl">The kind you need</h2>
+                <p className="mt-5 font-display text-4xl leading-tight">{best.name}</p>
+                <p className="mt-4 text-base leading-7 text-paper">{best.summary}</p>
+                {spec.length > 0 ? (
+                  <ul className="mt-5 space-y-2 text-sm leading-6 text-paper">
+                    {spec.map((item) => (
+                      <li key={item} className="flex gap-3">
+                        <span className="mt-2 h-1.5 w-1.5 shrink-0 bg-copper" />
+                        <span>{sentence(item)}</span>
+                      </li>
                     ))}
                   </ul>
-                </>
-              ) : null}
-            </div>
-          ) : null}
-        </section>
-      ) : null}
+                ) : null}
+                {version ? (
+                  <p className="mt-4 text-sm leading-6 text-muted">
+                    This spec comes from what you told me: {version}.
+                  </p>
+                ) : skipped ? (
+                  <p className="mt-4 text-sm leading-6 text-muted">
+                    This is the usual kind for this pain. Finish the questions if
+                    you want a spec tuned to you.
+                  </p>
+                ) : null}
+                <p className="mt-4 text-sm leading-7 text-muted">
+                  <span className="text-paper">The downside. </span>
+                  {tradeoffLine(best, criteria)}
+                </p>
+              </section>
 
-      <section>
-        <h2 className="font-display text-3xl">What usually helps</h2>
-        <p className="mt-4 max-w-2xl text-sm leading-7 text-muted">
-          These are the things people actually trade off. They feed the sliders.
-          They are not a product pitch.
-        </p>
-        <ul className="mt-5 space-y-2 text-sm">
-          {criteria.map((item) => (
-            <li key={item.slug}>
-              <span className="text-paper">{item.name}.</span>{" "}
-              <span className="text-muted">{item.detail}</span>
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      {consumer.mistakes.length > 0 || consumer.tradeoffs.length > 0 ? (
-        <section>
-          <h2 className="font-display text-3xl">Avoid these mistakes</h2>
-          {consumer.mistakes.length > 0 ? (
-            <ul className="mt-5 max-w-2xl space-y-3 text-sm leading-6 text-muted">
-              {consumer.mistakes.map((item) => (
-                <li key={item}>{item}</li>
-              ))}
-            </ul>
-          ) : null}
-          {consumer.tradeoffs.length > 0 ? (
-            <div className="mt-6 max-w-2xl">
-              <p className="text-xs uppercase tracking-[0.16em] text-copper">
-                Common trade-offs
-              </p>
-              <ul className="mt-3 space-y-2 text-sm leading-6 text-muted">
-                {consumer.tradeoffs.map((item) => (
-                  <li key={item}>{item}</li>
-                ))}
-              </ul>
-            </div>
-          ) : null}
-        </section>
-      ) : null}
-
-      <section>
-        <h2 className="font-display text-3xl">What matters most to you</h2>
-        <p className="mt-3 max-w-2xl text-sm leading-6 text-muted">
-          {diagnosticReady
-            ? "Sliders are set from your diagnostic. Move one if you would reject a product that fails it."
-            : "Three to five controls. Move a slider right if you would reject a product that fails it. Rankings update immediately."}
-        </p>
-        <div className="mt-5 flex flex-wrap gap-2">
-          {presets.map((preset) => (
-            <button
-              key={preset.id}
-              type="button"
-              onClick={() => {
-                setWeights(normalizePriorities(preset.weights, slugs));
-                setSaved(false);
-              }}
-              className="border border-line px-3 py-1.5 text-xs uppercase tracking-[0.14em] text-muted hover:border-copper hover:text-copper"
-            >
-              {preset.label}
-            </button>
-          ))}
-        </div>
-        <div className="mt-6 space-y-5">
-          {criteria.map((item) => (
-            <label key={item.slug} className="block">
-              <span className="flex justify-between text-sm">
-                <span>{item.name}</span>
-                <span className="font-mono text-copper">
-                  {Math.round(weights[item.slug] || 0)}%
-                </span>
-              </span>
-              <p className="mt-1 text-xs leading-5 text-muted">{item.detail}</p>
-              <input
-                type="range"
-                min={0}
-                max={100}
-                value={weights[item.slug] || 0}
-                onChange={(event) => setSlug(item.slug, Number(event.target.value))}
-                className="mt-2 w-full accent-copper"
-              />
-            </label>
-          ))}
-        </div>
-        <div className="mt-6">
-          <button
-            type="button"
-            disabled={saving}
-            onClick={() => void savePreferences()}
-            className="border border-line px-4 py-2 text-sm text-paper hover:border-copper hover:text-copper disabled:opacity-60"
-          >
-            {signedIn
-              ? saved
-                ? "Preferences saved"
-                : "Save my preferences"
-              : "Save my preferences"}
-          </button>
-          <p className="mt-2 max-w-xl text-xs leading-5 text-muted">
-            {signedIn
-              ? "Keeps these sliders for you on this PainGraph. Rankings stay based on fit, not commission."
-              : "Sign in to keep these sliders. You can still rank products without an account."}
-          </p>
-        </div>
-      </section>
-
-      {evidenceCount > 0 ? (
-        <p className="text-xs text-muted">
-          {evidenceCount === 1
-            ? "Ranking confidence: 1 public complaint selected for this pain. That is the evidence we have, not a review score."
-            : `Ranking confidence: ${evidenceCount} public complaints selected for this pain. That is the evidence we have, not a review score.`}
-        </p>
-      ) : null}
-
-      {best ? (
-        <section>
-          <h2 className="font-display text-3xl">Best match for you</h2>
-          <ProductMatch product={best} criteria={criteria} featured />
-        </section>
-      ) : (
-        <p className="text-sm text-muted">
-          Recommended product types will appear here once this PainGraph has
-          scored options.
-        </p>
-      )}
-
-      {rest.length > 0 ? (
-        <section>
-          <h2 className="font-display text-3xl">Other strong options</h2>
-          <ul className="mt-5 space-y-3">
-            {rest.map((product) => (
-              <li key={product.id}>
-                <ProductMatch product={product} criteria={criteria} />
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
-
-      {ranked.length > 1 && criteria.length > 0 ? (
-        <section>
-          <h2 className="font-display text-3xl">Compare the options</h2>
-          <p className="mt-3 max-w-2xl text-sm leading-6 text-muted">
-            Same criteria, live with your sliders. Commission does not appear
-            here.
-          </p>
-          <div className="mt-6 overflow-x-auto">
-            <table className="w-full min-w-[640px] text-left text-sm">
-              <thead className="text-xs uppercase tracking-[0.14em] text-muted">
-                <tr>
-                  <th className="py-2 pr-3">Criterion</th>
-                  {ranked.map((product) => (
-                    <th key={product.id} className="py-2 pr-3">
-                      {product.name}
-                    </th>
+              <section className="max-w-2xl">
+                <h2 className="font-display text-3xl">Products that fit</h2>
+                <ul className="mt-5 space-y-3">
+                  {fits.map((product) => (
+                    <li key={product.id}>
+                      <ProductCard
+                        product={product}
+                        featured={product.id === best.id}
+                      />
+                    </li>
                   ))}
-                </tr>
-              </thead>
-              <tbody>
-                {comparisonRows(ranked, criteria).map((row) => {
-                  const top = Math.max(...row.values);
-                  return (
-                    <tr key={row.key} className="border-t border-line">
-                      <td className="py-3 pr-3 text-paper">{row.name}</td>
-                      {row.values.map((value, index) => (
-                        <td
-                          key={`${row.key}-${ranked[index].id}`}
-                          className={
-                            value === top
-                              ? "py-3 pr-3 font-mono text-copper"
-                              : "py-3 pr-3 font-mono text-muted"
-                          }
-                        >
-                          {row.key === "match" ? `${value}%` : value}
-                        </td>
-                      ))}
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      ) : null}
-
-      {best ? (
-        <section>
-          <h2 className="font-display text-3xl">Why these ranked this way</h2>
-          <p className="mt-4 max-w-2xl text-sm leading-7 text-muted">
-            Each option is scored on the same criteria you weighted
-            {diagnosticReady ? `, starting from “${profileLabel}”` : ""}.
-            Product-fit is calculated before any affiliate destination.
-            Commission does not move the ranking. A checkout link is added only
-            when a verified URL is pasted.
-          </p>
-          {rankingReasons(ranked, criteria, weights).map(
-            (reason) => (
-              <p key={reason.name} className="mt-3 max-w-2xl text-sm leading-6 text-muted">
-                {reason.bestName} ranks above {reason.nextName} on{" "}
-                {reason.name.toLowerCase()} ({reason.bestScore} vs {reason.nextScore}
-                ), which you weighted {reason.weight}%.
-              </p>
-            ),
+                </ul>
+              </section>
+            </>
+          ) : (
+            <p id="start-here" className="text-sm text-muted">
+              A product kind will appear here once this PainGraph has scored
+              options.
+            </p>
           )}
-        </section>
+          {after ? <div className="max-w-2xl">{after}</div> : null}
+        </>
       ) : null}
     </div>
   );
+}
+
+function defaultWeights(saved: Priorities | null, slugs: string[]): Priorities {
+  if (saved && Object.values(saved).some((value) => value > 0)) {
+    return normalizePriorities(saved, slugs);
+  }
+  return focusWeights(slugs, slugs.slice(0, 2));
 }
 
 function unique(values: string[]) {
   return [...new Set(values)];
 }
 
-function ProductMatch({
+function sentence(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) return trimmed;
+  return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+}
+
+function productFitsSpec(
+  product: RecommendedProduct,
+  best: RecommendedProduct,
+  needed: string[],
+) {
+  if (product.id === best.id) return true;
+  const specScore = needed.length
+    ? average(
+        needed
+          .map((slug) => product.scores[slug])
+          .filter((score): score is number => score != null),
+      )
+    : product.match;
+  const bestScore = needed.length
+    ? average(
+        needed
+          .map((slug) => best.scores[slug])
+          .filter((score): score is number => score != null),
+      )
+    : best.match;
+  if (specScore == null || bestScore == null) return false;
+  return specScore >= 70 && specScore >= bestScore - 8;
+}
+
+function average(values: number[]) {
+  if (values.length === 0) return null;
+  return values.reduce((sum, value) => sum + value, 0) / values.length;
+}
+
+function tradeoffLine(
+  product: RecommendedProduct,
+  criteria: PainCriterion[],
+) {
+  const { drawbacks } = productAttributes(product, criteria);
+  if (product.note.trim()) return product.note;
+  if (drawbacks[0]) {
+    return `You give some ${drawbacks[0].name.toLowerCase()} to get the job done.`;
+  }
+  return product.summary;
+}
+
+function ProductCard({
   product,
-  criteria,
   featured = false,
 }: {
   product: RecommendedProduct;
-  criteria: PainCriterion[];
   featured?: boolean;
 }) {
-  const { strengths, drawbacks } = productAttributes(product, criteria);
-
   return (
     <article
       className={
-        featured
-          ? "mt-5 border border-copper p-5"
-          : "border border-line p-4"
+        featured ? "border border-copper p-5" : "border border-line p-4"
       }
     >
-      <p className="text-xs uppercase tracking-[0.16em] text-copper">
-        {product.match}% match
-      </p>
-      <h3 className={featured ? "mt-2 font-display text-2xl" : "mt-1 font-display text-xl"}>
+      <h3 className={featured ? "font-display text-2xl" : "font-display text-xl"}>
         {product.name}
       </h3>
-      <p className="mt-3 text-sm leading-6 text-muted">{product.summary}</p>
-      <p className="mt-3 text-sm">{product.whoFor}</p>
-      <p className="mt-2 text-sm text-muted">{product.note}</p>
-      {strengths.length > 0 ? (
-        <p className="mt-3 text-sm">
-          <span className="text-paper">Strongest:</span>{" "}
-          <span className="text-muted">
-            {strengths.map((row) => row.name).join(", ")}
-          </span>
-        </p>
-      ) : null}
-      {drawbacks.length > 0 ? (
-        <p className="mt-1 text-sm">
-          <span className="text-paper">Drawbacks:</span>{" "}
-          <span className="text-muted">
-            {drawbacks.map((row) => row.name).join(", ")}
-          </span>
-        </p>
-      ) : null}
+      <p className="mt-3 text-sm leading-6 text-paper">{product.whoFor}</p>
       {product.priceBand ? (
         <p className="mt-3 font-mono text-xs text-copper">{product.priceBand}</p>
       ) : null}
-      <CheckPrice href={product.destinationUrl} />
+      <CheckPrice href={product.destinationUrl} featured={featured} />
     </article>
   );
 }
 
-function CheckPrice({ href }: { href: string | null }) {
+function CheckPrice({
+  href,
+  featured = false,
+}: {
+  href: string | null;
+  featured?: boolean;
+}) {
   if (href) {
     return (
       <a
         href={href}
         rel="nofollow sponsored"
-        className="mt-4 inline-block bg-copper px-4 py-2 text-sm text-ink hover:bg-copper-2"
+        className={
+          featured
+            ? "mt-5 inline-block bg-copper px-6 py-3 text-base text-ink hover:bg-copper-2"
+            : "mt-4 inline-block bg-copper px-4 py-2 text-sm text-ink hover:bg-copper-2"
+        }
       >
-        Check price
+        See a shop link
       </a>
     );
   }
   return (
     <p className="mt-4 text-xs leading-5 text-muted">
-      Check price is added only when a verified destination URL is pasted.
-      Rankings stay based on fit, not commission.
+      No live shop link for this kind yet.
     </p>
   );
 }

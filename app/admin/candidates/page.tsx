@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { OpenAIExtractButton } from "@/components/openai-extract-button";
 import { openaiConfigured } from "@/lib/discovery/openai";
-import { listCandidates } from "@/lib/discovery/store";
+import { latestIngestRun, listCandidates } from "@/lib/discovery/store";
 
 export const dynamic = "force-dynamic";
 
@@ -26,12 +26,26 @@ export default async function AdminCandidatesPage({
     query.status === "merged"
       ? query.status
       : undefined;
-  const listed = await listCandidates(status);
+  const [listed, ingest] = await Promise.all([
+    listCandidates(status),
+    latestIngestRun(),
+  ]);
   const rows = status
     ? listed
     : listed.filter((row) =>
         ["new", "watch", "needs_evidence"].includes(row.status),
       );
+  const summary = ingest
+    ? (JSON.parse(ingest.summary) as {
+        openaiLooks?: {
+          title: string;
+          reason: string;
+          noise: boolean;
+          already: string | null;
+        }[];
+      })
+    : null;
+  const looks = summary?.openaiLooks ?? [];
 
   return (
     <main className="pb-16">
@@ -53,6 +67,27 @@ export default async function AdminCandidatesPage({
           {query.discarded ? ` · discarded ${query.discarded}` : ""}. Review
           before anything is published.
         </p>
+      ) : null}
+      {looks.length > 0 ? (
+        <section className="mt-6 max-w-2xl">
+          <h2 className="font-display text-2xl">Last OpenAI look</h2>
+          <p className="mt-2 text-xs leading-5 text-muted">
+            Grounded in licensed Ask HN, Software Recs, or CPSC text. Noise
+            stays out of the queue.
+          </p>
+          <ul className="mt-4">
+            {looks.map((look, index) => (
+              <li key={`${look.title}-${index}`} className="border-t border-line py-3">
+                <p className="text-sm text-paper">{look.title}</p>
+                <p className="mt-1 text-xs text-muted">
+                  {look.noise ? "Not queued" : "Would queue"}
+                  {look.already ? ` · already live as ${look.already}` : ""}
+                  {` · ${look.reason}`}
+                </p>
+              </li>
+            ))}
+          </ul>
+        </section>
       ) : null}
       <nav className="mt-6 flex flex-wrap gap-2 text-xs uppercase tracking-[0.14em]">
         {[

@@ -1,4 +1,5 @@
 import { PainPublicationForm } from "@/components/pain-publication-form";
+import { RewriteNarrativeButton } from "@/components/rewrite-narrative-button";
 import { listAllPainGraphs } from "@/lib/paingraph/queries";
 
 export const dynamic = "force-dynamic";
@@ -31,7 +32,10 @@ export default async function AdminPainsPage() {
                 {graph.category.name} · {graph.subcategory.name} · {graph.status}
               </p>
             </div>
-            <PainPublicationForm painId={graph.id} status={graph.status} />
+            <div className="flex flex-wrap gap-2">
+              <RewriteNarrativeButton painId={graph.id} />
+              <PainPublicationForm painId={graph.id} status={graph.status} />
+            </div>
           </li>
         ))}
       </ul>
