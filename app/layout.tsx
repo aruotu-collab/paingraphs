@@ -31,7 +31,7 @@ export const metadata: Metadata = {
     template: "%s · PainGraphs",
   },
   description:
-    "A live marketplace of problems, unmet demand, and commercial opportunities. Solve a pain, promote a solution, or build a better one.",
+    "Move the sliders on a PainGraph to see which kinds fit. Shop links appear only when a real destination exists.",
   alternates: { canonical: "/" },
   openGraph: {
     type: "website",
@@ -40,7 +40,7 @@ export const metadata: Metadata = {
     siteName: "PainGraphs",
     title: "PainGraphs — see what people are struggling with",
     description:
-      "A live marketplace of problems, unmet demand, and commercial opportunities.",
+      "Move the sliders on a PainGraph to see which kinds fit.",
   },
 };
 

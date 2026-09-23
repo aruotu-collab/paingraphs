@@ -43,6 +43,12 @@ export const CATEGORIES: CatalogCategory[] = [
     name: "Shoes",
     summary: "Footwear that rubs, slips, or cannot last a standing day.",
   },
+  {
+    id: "cat-transport",
+    slug: "transport",
+    name: "Transport",
+    summary: "Bikes and daily vehicles that fail on a real commute.",
+  },
 ];
 
 export const CLUSTERS: CatalogCluster[] = [
@@ -80,6 +86,13 @@ export const CLUSTERS: CatalogCluster[] = [
     slug: "all-day-fit",
     name: "All-day fit",
     summary: "Rubbing, slipping, and standing fatigue.",
+  },
+  {
+    id: "cl-e-bikes",
+    categoryId: "cat-transport",
+    slug: "e-bikes",
+    name: "Electric bicycles",
+    summary: "Range, hills, weight, and weather on a real commute.",
   },
 ];
 
@@ -194,6 +207,36 @@ export const PRODUCTS: CatalogProduct[] = [
     whoFor: "Best if you stand all day and bunions are mild.",
     searchQuery: "cushioned trainers all day standing",
     priceBand: "£80–£180",
+  },
+  {
+    id: "prod-mid-drive-commuter",
+    slug: "mid-drive-commuter",
+    name: "Mid-drive commuter",
+    summary:
+      "The motor sits at the pedals, so assist holds on hills instead of fading when you slow down.",
+    whoFor: "Best if hills eat your battery before distance does.",
+    searchQuery: "mid drive electric bike commuter hills",
+    priceBand: "£1,400–£3,200",
+  },
+  {
+    id: "prod-folding-hub",
+    slug: "folding-hub-ebike",
+    name: "Folding hub-motor e-bike",
+    summary:
+      "Folds for a train or a hallway. Smaller batteries and hub motors run out first on climbs and cold mornings.",
+    whoFor: "Best if you have to carry it up stairs or onto a train.",
+    searchQuery: "folding electric bike lightweight commute",
+    priceBand: "£700–£1,800",
+  },
+  {
+    id: "prod-long-range-commuter",
+    slug: "long-range-commuter",
+    name: "Long-range commuter",
+    summary:
+      "A bigger battery survives a week of mixed weather. The extra cells make it hard to lift.",
+    whoFor: "Best if the ride is long and you never have to carry the bike.",
+    searchQuery: "long range electric bike commuter battery",
+    priceBand: "£1,800–£4,000",
   },
 ];
 
@@ -1108,6 +1151,109 @@ export const PAINS: CatalogPain[] = [
       },
     ],
     consumer: PAIN_CONSUMERS["pain-bunion"],
+  },
+  {
+    id: "pain-ebike-range",
+    clusterId: "cl-e-bikes",
+    slug: "real-range",
+    title: "Electric bikes that still have range after a commute",
+    h1: "Electric bikes that still have range after a real commute",
+    problem:
+      "The sticker range is measured on flat ground, in mild weather, on a low assist setting. Hills, cold mornings, and stop-start traffic cut that number in half. People get stranded on the way home.",
+    analysis:
+      "A hub motor works on the flat and fades on a climb, so you drain the battery fighting the hill. A mid-drive keeps assist when you slow down. Folding bikes are easy to carry and usually pack a smaller battery. Long-range frames last the week and you will not want to lift them onto a train. Paying more for a bigger advertised kilometre number does not fix hills or cold.",
+    whyNow:
+      "This is a daily commute problem now, not a weekend leisure complaint. More people replaced a car trip with an e-bike and then discovered the battery did not match the route.",
+    strategy: "affiliate now → own product later",
+    stage: 3,
+    painScore: 86,
+    intentScore: 84,
+    competitionScore: 58,
+    productGap: 54,
+    affiliateScore: 80,
+    organicScore: 82,
+    opportunity: 81,
+    trend: 62,
+    sensitive: false,
+    related: [],
+    searchPhrases: [
+      "electric bike range less than advertised",
+      "ebike battery dies on hills",
+      "electric bike for hilly commute",
+    ],
+    youtubeQueries: [
+      "electric bike real world range",
+      "ebike battery dies commute",
+    ],
+    criteria: [
+      {
+        slug: "range",
+        name: "Range that lasts the commute",
+        detail:
+          "Whether the battery still has charge after your real route, not the sticker number.",
+      },
+      {
+        slug: "hills",
+        name: "Hills and stop-start",
+        detail:
+          "Whether assist stays useful on climbs and after traffic lights, instead of fading when you slow down.",
+      },
+      {
+        slug: "lift",
+        name: "Lifting and carrying",
+        detail:
+          "Whether you can get it up stairs, onto a train, or into a hallway without a fight.",
+      },
+      {
+        slug: "weather",
+        name: "Cold and wet days",
+        detail:
+          "How much range and grip you lose on a cold morning or in rain.",
+      },
+      {
+        slug: "price",
+        name: "Price",
+        detail: "What you will spend for a bike you ride four days a week.",
+      },
+    ],
+    products: [
+      {
+        productId: "prod-mid-drive-commuter",
+        scores: { range: 78, hills: 90, lift: 48, weather: 72, price: 52 },
+        note: "The motor sits at the pedals, so assist holds on hills instead of fading. Still heavy for stairs or a packed train.",
+      },
+      {
+        productId: "prod-folding-hub",
+        scores: { range: 48, hills: 38, lift: 86, weather: 55, price: 78 },
+        note: "Folds and you can carry it. Smaller batteries and hub motors run out first on climbs and cold mornings.",
+      },
+      {
+        productId: "prod-long-range-commuter",
+        scores: { range: 92, hills: 70, lift: 28, weather: 80, price: 38 },
+        note: "A bigger battery survives a real week of commuting. You will not want to carry it up stairs.",
+      },
+    ],
+    signals: [
+      {
+        rawQuote:
+          "Advertised 80km. I get about 35 on my commute once the hills and the cold kick in.",
+        sourceKind: "composite",
+        sourceLabel: "Composite of repeated public review language",
+      },
+      {
+        rawQuote:
+          "The assist dies on the climb, then I drain the battery pedalling a heavy bike home.",
+        sourceKind: "composite",
+        sourceLabel: "Composite of repeated public review language",
+      },
+      {
+        rawQuote:
+          "I can fold it for the train, but I am out of charge before I get to the station.",
+        sourceKind: "composite",
+        sourceLabel: "Composite of repeated public review language",
+      },
+    ],
+    consumer: PAIN_CONSUMERS["pain-ebike-range"],
   },
 ];
 

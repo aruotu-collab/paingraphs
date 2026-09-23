@@ -16,6 +16,7 @@ import { informativeQuotes, isInformativeQuote } from "@/lib/paingraph/quotes";
 import { listDestinationsForPain } from "@/lib/destinations/store";
 import { goHref, pickPublicDestination } from "@/lib/destinations/url";
 import { consumerIntelFor } from "./consumer";
+import { concernName } from "./match";
 import { narrativeFor } from "./narrative-store";
 import { painHref } from "./path";
 import { scoresFromPain } from "./scores";
@@ -32,6 +33,7 @@ function toGraph(
   category: typeof categories.$inferSelect,
   evidenceCount: number,
   snapshot?: typeof painGraphScores.$inferSelect | null,
+  concerns: { slug: string; name: string }[] = [],
 ): PainGraph {
   return {
     id: pain.id,
@@ -49,6 +51,7 @@ function toGraph(
     scores: scoresFromPain(pain, evidenceCount, snapshot),
     category: { slug: category.slug, name: category.name },
     subcategory: { slug: cluster.slug, name: cluster.name },
+    concerns,
   };
 }
 
@@ -84,9 +87,10 @@ async function listPainGraphRecords(): Promise<PainGraph[]> {
     .innerJoin(categories, eq(painClusters.categoryId, categories.id))
     .orderBy(desc(pains.opportunity));
 
-  const [signalRows, scoreRows] = await Promise.all([
+  const [signalRows, scoreRows, criterionRows] = await Promise.all([
     db.select().from(painSignals),
     db.select().from(painGraphScores),
+    db.select().from(criteria),
   ]);
   const counts = new Map<string, number>();
   for (const row of signalRows) {
@@ -94,6 +98,15 @@ async function listPainGraphRecords(): Promise<PainGraph[]> {
     counts.set(row.painId, (counts.get(row.painId) ?? 0) + 1);
   }
   const snapshots = new Map(scoreRows.map((row) => [row.painId, row]));
+  const concernsByPain = new Map<string, { slug: string; name: string }[]>();
+  for (const row of criterionRows) {
+    const existing = concernsByPain.get(row.painId) ?? [];
+    existing.push({
+      slug: row.slug,
+      name: concernName({ slug: row.slug, name: row.name, detail: row.detail }),
+    });
+    concernsByPain.set(row.painId, existing);
+  }
 
   return rows.map(({ pain, cluster, category }) =>
     toGraph(
@@ -102,6 +115,7 @@ async function listPainGraphRecords(): Promise<PainGraph[]> {
       category,
       counts.get(pain.id) ?? 0,
       snapshots.get(pain.id),
+      concernsByPain.get(pain.id) ?? [],
     ),
   );
 }

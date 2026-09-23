@@ -13,16 +13,16 @@ export function FounderGap({
         <p className="text-sm leading-6 text-paper">{gap.unmetNeed}</p>
       ) : (
         <p className="text-sm leading-6 text-muted">
-          Existing options cover the scored criteria. The gap, if any, is in
-          combining them without the usual trade-offs.
+          Existing kinds survive the default sliders. The opening, if any, is
+          combining concerns without the usual trade-offs.
         </p>
       )}
       <p className="font-mono text-xs text-copper">
-        {gap.productCount === 1
-          ? "1 scored product"
-          : `${gap.productCount} scored products`}
-        {gap.weakest
-          ? ` · Weakest coverage ${gap.weakest.name} ${Math.round(gap.weakest.best)}`
+        {gap.surviving.length === 1
+          ? "1 kind survives default sliders"
+          : `${gap.surviving.length} kinds survive default sliders`}
+        {gap.dealBreakers.length > 0
+          ? ` · Deal-breaker gaps: ${gap.dealBreakers.map((item) => item.name).join(", ")}`
           : ""}
       </p>
       {detail ? (

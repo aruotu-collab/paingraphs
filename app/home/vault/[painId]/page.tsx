@@ -5,7 +5,7 @@ import { VaultDestinationForm } from "@/components/vault-destination-form";
 import { productsForPain } from "@/lib/destinations/store";
 import { listPainGraphs } from "@/lib/paingraph/queries";
 import { listProgrammesForProducts } from "@/lib/programmes/store";
-import { requireSession } from "@/lib/session";
+import { requirePro } from "@/lib/session";
 import { listMemberDestinations } from "@/lib/vault/store";
 
 export const dynamic = "force-dynamic";
@@ -15,7 +15,7 @@ export default async function VaultPainPage({
 }: {
   params: Promise<{ painId: string }>;
 }) {
-  const session = await requireSession("/home/vault");
+  const session = await requirePro("/home/vault");
   const { painId } = await params;
   const [graphs, products, destinations] = await Promise.all([
     listPainGraphs(),
@@ -47,7 +47,7 @@ export default async function VaultPainPage({
       </p>
       <h1 className="mt-3 font-display text-4xl">{graph.title}</h1>
       <p className="mt-4 max-w-2xl text-sm leading-6 text-muted">
-        These URLs are only on your account. They do not become Check price on
+        These URLs are only on your account. They do not become a shop link on
         the public PainGraph.
       </p>
       <div className="mt-4 flex flex-wrap gap-4 text-sm">

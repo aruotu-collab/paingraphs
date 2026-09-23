@@ -15,6 +15,7 @@ export function PainSearch({ graphs }: { graphs: PainGraph[] }) {
         graph.summary,
         graph.category.name,
         graph.subcategory.name,
+        ...graph.concerns.map((item) => item.name),
       ]
         .join(" ")
         .toLowerCase()
@@ -29,9 +30,9 @@ export function PainSearch({ graphs }: { graphs: PainGraph[] }) {
         <input
           type="search"
           value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder="glasses, leak, sting, vacuum…"
-          className="mt-2 h-11 w-full max-w-xl border border-line bg-ink-2 px-3 outline-none focus:border-copper"
+          onChange={(event) => setQuery(event.currentTarget.value)}
+          placeholder="glasses, leak, sting, vacuum, e-bike…"
+          className="mt-2 h-11 w-full max-w-xl rounded-xl border border-line bg-white px-3 outline-none focus:border-[#1f8a4d]"
         />
       </label>
       <p className="mt-3 text-xs text-muted">

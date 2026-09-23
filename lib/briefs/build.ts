@@ -99,13 +99,13 @@ export function buildCampaignBrief(input: {
     ],
     headlines: unique([
       input.graph.title.slice(0, 30),
-      "What usually helps",
+      input.graph.concerns[0]?.name.slice(0, 30) || "What usually helps",
       input.productNames[0]?.slice(0, 30) ?? "Ranked options",
-      "Fit, not commission",
+      "Move the sliders",
     ]),
     descriptions: unique([
       input.graph.summary.slice(0, 90),
-      "Recommendations follow your preferences. Commercial links are disclosed.",
+      "People set how much each concern matters. Shop links appear only when a real destination exists.",
       input.dailyBudget
         ? `Draft only. Daily budget target ${input.dailyBudget}. PainGraphs does not launch ads.`
         : "Draft only. PainGraphs does not launch ads.",
@@ -117,7 +117,7 @@ export function buildCampaignBrief(input: {
       : `Standard product research. Country ${input.country === "*" ? "unspecified" : input.country}. Confirm trademark and destination policy.`,
     tracking: [
       "Use a tracking URL you already created.",
-      "Public Check price still goes through /go.",
+      "Public shop links still go through /go.",
       "Do not raise fit score because an ad pays more.",
     ],
     breakEvenCpc: breakEvenCpcCopy({

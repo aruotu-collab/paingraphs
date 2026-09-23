@@ -1,9 +1,7 @@
 import Link from "next/link";
-import { OpportunityCard } from "@/components/opportunity-card";
+import { ConsumerShell } from "@/components/consumer-shell";
 import { PainSearch } from "@/components/pain-search";
-import { todaysOpportunity } from "@/lib/opportunities/daily";
-import { founderGapFromPage } from "@/lib/opportunities/gap";
-import { getPainGraphPage, listPainGraphs } from "@/lib/paingraph/queries";
+import { listPainGraphs } from "@/lib/paingraph/queries";
 
 export const dynamic = "force-dynamic";
 
@@ -14,98 +12,64 @@ export default async function HomePage() {
       graphs.map((graph) => [graph.category.slug, graph.category]),
     ).values(),
   ];
-  const [affiliateDay, founderDay] = await Promise.all([
-    todaysOpportunity("affiliate", graphs),
-    todaysOpportunity("founder", graphs),
-  ]);
-  const founderPage = founderDay
-    ? await getPainGraphPage(
-        founderDay.category.slug,
-        founderDay.subcategory.slug,
-        founderDay.slug,
-      )
-    : null;
-  const founderGap = founderPage ? founderGapFromPage(founderPage) : null;
   return (
-    <main className="mx-auto w-full max-w-6xl flex-1 px-5 py-12">
-      <p className="text-xs uppercase tracking-[0.18em] text-copper">
-        One PainGraph · five lenses
+    <ConsumerShell>
+      <p className="text-xs uppercase tracking-[0.18em] text-[#1f8a4d]">
+        PainGraph · move the sliders
       </p>
-      <h1 className="mt-3 max-w-3xl font-display text-5xl leading-tight">
-        See what people are struggling with — and what to do about it.
+      <h1 className="mt-3 max-w-3xl font-display text-5xl leading-tight text-[#12281a]">
+        Say what bothers you. See what usually fits.
       </h1>
-      <p className="mt-5 max-w-2xl text-lg leading-8 text-muted">
-        PainGraphs is a live marketplace of problems. Consumers find what
-        usually helps. Affiliates promote existing solutions. Founders find
-        gaps worth building.
+      <p className="mt-5 max-w-2xl text-lg leading-8 text-[#5d7263]">
+        Open a PainGraph, set how much each concern matters, and kinds re-rank
+        live. Shop links appear only when a real destination has been pasted.
       </p>
 
-      <div className="mt-10 grid gap-4 md:grid-cols-3">
-        <Link href="/" className="border border-line p-5 hover:border-copper">
-          <p className="text-xs uppercase tracking-[0.16em] text-copper">Solve</p>
-          <h2 className="mt-2 font-display text-2xl">Solve a pain</h2>
-          <p className="mt-3 text-sm leading-6 text-muted">
-            Find products, services, and approaches that may help.
-          </p>
-        </Link>
-        <Link href="/affiliates" className="border border-line p-5 hover:border-copper">
-          <p className="text-xs uppercase tracking-[0.16em] text-copper">Promote</p>
-          <h2 className="mt-2 font-display text-2xl">Promote a solution</h2>
-          <p className="mt-3 text-sm leading-6 text-muted">
-            Find pain-driven affiliate opportunities backed by observed demand.
-          </p>
-        </Link>
-        <Link href="/founders" className="border border-line p-5 hover:border-copper">
-          <p className="text-xs uppercase tracking-[0.16em] text-copper">Build</p>
-          <h2 className="mt-2 font-display text-2xl">Build a solution</h2>
-          <p className="mt-3 text-sm leading-6 text-muted">
-            Find underserved pains that may be worth building for.
-          </p>
-        </Link>
-      </div>
-
-      {affiliateDay || founderDay ? (
-        <section className="mt-16 grid gap-4 md:grid-cols-2">
-          {affiliateDay ? (
-            <OpportunityCard graph={affiliateDay} lens="affiliate" />
-          ) : null}
-          {founderDay ? (
-            <OpportunityCard
-              graph={founderDay}
-              lens="founder"
-              gap={founderGap?.unmetNeed}
-              href={`/founders/gap/${founderDay.id}`}
-            />
-          ) : null}
-        </section>
-      ) : null}
-
-      <section className="mt-16">
-        <h2 className="font-display text-3xl">Explore by category</h2>
+      <section className="mt-12">
+        <h2 className="font-display text-3xl text-[#12281a]">Find a pain</h2>
         <div className="mt-5 flex flex-wrap gap-2">
           {categories.map((category) => (
             <Link
               key={category.slug}
               href={`/${category.slug}`}
-              className="border border-line px-3 py-1.5 text-sm text-muted hover:border-copper hover:text-copper"
+              className="rounded-full border border-[#d7e2d4] bg-white px-3 py-1.5 text-sm text-[#3f6b4c] hover:border-[#1f8a4d] hover:text-[#1f8a4d]"
             >
               {category.name}
             </Link>
           ))}
         </div>
-      </section>
-
-      <section className="mt-16">
-        <div className="flex items-end justify-between gap-4">
-          <h2 className="font-display text-3xl">Live PainGraphs</h2>
-          <Link href="/top-pains" className="text-sm text-copper hover:text-copper-2">
-            Open Billboard
-          </Link>
-        </div>
-        <div className="mt-6">
+        <div className="mt-8">
           <PainSearch graphs={graphs} />
         </div>
       </section>
-    </main>
+
+      <section className="mt-16 grid gap-4 md:grid-cols-2">
+        <Link
+          href="/affiliates"
+          className="rounded-2xl border border-[#d7e2d4] bg-white p-5 hover:border-[#1f8a4d]"
+        >
+          <p className="text-xs uppercase tracking-[0.16em] text-[#1f8a4d]">
+            Promote
+          </p>
+          <h2 className="mt-2 font-display text-2xl">For affiliates</h2>
+          <p className="mt-3 text-sm leading-6 text-[#5d7263]">
+            See which kinds survive real slider profiles, and whether a public
+            shop link exists.
+          </p>
+        </Link>
+        <Link
+          href="/founders"
+          className="rounded-2xl border border-[#d7e2d4] bg-white p-5 hover:border-[#1f8a4d]"
+        >
+          <p className="text-xs uppercase tracking-[0.16em] text-[#1f8a4d]">
+            Build
+          </p>
+          <h2 className="mt-2 font-display text-2xl">For founders</h2>
+          <p className="mt-3 text-sm leading-6 text-[#5d7263]">
+            Find deal-breaker gaps — slider settings no current kind survives.
+          </p>
+        </Link>
+      </section>
+    </ConsumerShell>
   );
 }

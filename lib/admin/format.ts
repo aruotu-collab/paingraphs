@@ -1,3 +1,12 @@
+export function visitCountryLabel(code: string | null | undefined) {
+  if (!code) return "Unknown";
+  try {
+    return new Intl.DisplayNames(["en"], { type: "region" }).of(code) ?? code;
+  } catch {
+    return code;
+  }
+}
+
 export function formatStamp(
   value: Date | string | number | null | undefined,
   mode: "date" | "datetime" = "datetime",

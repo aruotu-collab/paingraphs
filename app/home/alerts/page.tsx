@@ -30,7 +30,7 @@ export default async function AlertsPage() {
       <h1 className="mt-3 font-display text-4xl">Updates on pains you follow.</h1>
       <p className="mt-4 max-w-2xl text-sm leading-6 text-muted">
         Alerts fire when a saved PainGraph gets more evidence, another scored
-        product, a public Check price destination, a recorded price change, or
+        product, a public shop destination, a recorded price change, or
         a real score move. Opt in below if you want the same updates by email.
       </p>
       <div className="mt-4 flex flex-wrap gap-4 text-sm">

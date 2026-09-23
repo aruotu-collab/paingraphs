@@ -1,12 +1,12 @@
 import Link from "next/link";
 import { listPainGraphs } from "@/lib/paingraph/queries";
-import { requireSession } from "@/lib/session";
+import { requirePro } from "@/lib/session";
 import { memberDestinationCounts } from "@/lib/vault/store";
 
 export const dynamic = "force-dynamic";
 
 export default async function VaultPage() {
-  const session = await requireSession("/home/vault");
+  const session = await requirePro("/home/vault");
   const [graphs, counts] = await Promise.all([
     listPainGraphs(),
     memberDestinationCounts(session.user.id),
@@ -21,7 +21,7 @@ export default async function VaultPage() {
       <h1 className="mt-3 font-display text-4xl">Your affiliate URLs stay private.</h1>
       <p className="mt-4 max-w-2xl text-sm leading-6 text-muted">
         Save tracking URLs you already created. They never replace the public
-        PainGraphs Check price link. Programme discovery is a starting list,
+        PainGraphs shop link. Programme discovery is a starting list,
         not a whitelist.
       </p>
       <Link

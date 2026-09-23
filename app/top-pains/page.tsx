@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { BillboardNav } from "@/components/billboard-nav";
+import { ConsumerShell } from "@/components/consumer-shell";
 import { PainCard } from "@/components/pain-card";
 import { SaveSearchForm } from "@/components/save-search-form";
 import { entitlements } from "@/lib/identity/profile";
@@ -57,7 +58,7 @@ export default async function BillboardPage({
     view === "affiliate"
       ? "Best current affiliate scores. Programme discovery stays on Marketing Agent and the member vault."
       : view === "founder"
-        ? "Best current founder scores. Open a gap analysis to see what existing products still miss."
+        ? "Best current founder scores. Open a gap analysis to see deal-breaker slider gaps."
         : view === "intent"
           ? "Highest buying-intent PainGraphs. People are already looking for a fix."
           : view === "underserved"
@@ -69,9 +70,9 @@ export default async function BillboardPage({
                 : "Highest pain scores from published PainGraphs. This list stays consumer-readable.";
 
   return (
-    <main className="mx-auto w-full max-w-6xl flex-1 px-5 py-12">
-      <p className="text-xs uppercase tracking-[0.18em] text-copper">Billboard</p>
-      <h1 className="mt-3 font-display text-5xl">Live opportunity rankings.</h1>
+    <ConsumerShell>
+      <p className="text-xs uppercase tracking-[0.18em] text-[#1f8a4d]">Billboard</p>
+      <h1 className="mt-3 font-display text-5xl text-[#12281a]">Live opportunity rankings.</h1>
       <p className="mt-5 max-w-2xl text-lg leading-8 text-muted">{copy}</p>
       <BillboardNav view={view} filters={filters} />
       {signedIn ? (
@@ -132,6 +133,6 @@ export default async function BillboardPage({
           );
         })}
       </div>
-    </main>
+    </ConsumerShell>
   );
 }

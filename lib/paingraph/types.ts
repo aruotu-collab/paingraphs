@@ -30,6 +30,7 @@ export type PainGraph = {
   scores: PainScores;
   category: { slug: string; name: string };
   subcategory: { slug: string; name: string };
+  concerns: { slug: string; name: string }[];
 };
 
 export type RecommendedProduct = {

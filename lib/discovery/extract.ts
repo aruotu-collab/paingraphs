@@ -175,6 +175,11 @@ const CLUSTER_CUES: { slug: string; categorySlug: string; cues: string[] }[] = [
     cues: ["shoe", "blister", "insole"],
   },
   {
+    slug: "e-bikes",
+    categorySlug: "transport",
+    cues: ["e-bike", "ebike", "electric bike", "electric bicycle"],
+  },
+  {
     slug: "desk-back",
     categorySlug: "personal-care",
     cues: ["office chair", "desk chair", "lumbar", "lower back"],
@@ -202,6 +207,9 @@ const CONSUMER_PRODUCT_CUES = [
   "deodorant",
   "incontinence",
   "recall",
+  "e-bike",
+  "ebike",
+  "electric bike",
 ];
 
 function cuePattern(cue: string) {

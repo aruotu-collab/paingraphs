@@ -66,7 +66,7 @@ function savedDrafts(graph: PainGraph, previous: WatchState, next: WatchState): 
     drafts.push({
       painId: graph.id,
       kind: "saved_destination",
-      title: "A public Check price link was added",
+      title: "A public shop link was added",
       body: `${graph.title} now has a verified destination. Rankings still follow fit, not commission.`,
       href: graph.href,
     });

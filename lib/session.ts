@@ -23,6 +23,16 @@ export async function requireSession(next = "/home") {
   return session;
 }
 
+export async function requirePro(next = "/pricing") {
+  const session = await requireSession(next);
+  const { profile, capabilities } = await getAccess(session.user);
+  const owner = capabilities.admin || capabilities.marketingAgent;
+  if (!(owner || profile.plan === "pro" || profile.plan === "business")) {
+    redirect("/pricing");
+  }
+  return session;
+}
+
 export async function getAccess(user: { id: string; email?: string | null }) {
   const [capabilities, profile] = await Promise.all([
     resolveOwnerCapabilities(user),

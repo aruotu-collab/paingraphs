@@ -2,6 +2,7 @@ import Link from "next/link";
 import { CATEGORIES } from "@/lib/catalog/data";
 import { entitlements } from "@/lib/identity/profile";
 import { removeMemberProduct, saveMemberProduct } from "@/lib/products/actions";
+import { listMatchLenses } from "@/lib/opportunities/match-lens";
 import { productMatchesFor } from "@/lib/products/store";
 import { getAccess, requireSession } from "@/lib/session";
 
@@ -12,7 +13,10 @@ export default async function MyProductsPage() {
   const { profile, capabilities } = await getAccess(session.user);
   const owner = capabilities.admin || capabilities.marketingAgent;
   const access = entitlements(profile, owner);
-  const rows = access.pro ? await productMatchesFor(session.user.id) : [];
+  const [rows, lenses] = access.pro
+    ? await Promise.all([productMatchesFor(session.user.id), listMatchLenses()])
+    : [[], []];
+  const gaps = new Map(lenses.map((row) => [row.graph.id, row]));
 
   return (
     <main className="mx-auto w-full max-w-5xl flex-1 px-5 py-12">
@@ -21,8 +25,8 @@ export default async function MyProductsPage() {
       </p>
       <h1 className="mt-3 font-display text-4xl">Match what you already built.</h1>
       <p className="mt-4 max-w-2xl text-sm leading-6 text-muted">
-        Register a product you own. PainGraphs scores overlap with published
-        pains. Fit is not commission.
+        Register a product you own. Overlap uses published pains. Open a
+        PainGraph to compare your thing against kinds under the same sliders.
       </p>
       <Link href="/home" className="mt-4 inline-block text-sm text-copper hover:text-copper-2">
         Back to member home
@@ -134,7 +138,12 @@ export default async function MyProductsPage() {
                           {match.graph.title}
                         </Link>
                         <span className="ml-2 font-mono text-xs text-muted">
-                          Intent {Math.round(match.graph.scores.buyingIntent)}
+                          {gaps.get(match.graph.id)?.dealBreakers.length
+                            ? `Deal-breaker gaps: ${gaps
+                                .get(match.graph.id)
+                                ?.dealBreakers.map((item) => item.name)
+                                .join(", ")}`
+                            : `${gaps.get(match.graph.id)?.surviving.length ?? 0} kinds survive default sliders`}
                         </span>
                       </li>
                     ))}

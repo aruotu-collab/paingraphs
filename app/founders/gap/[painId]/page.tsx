@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ConsumerShell } from "@/components/consumer-shell";
 import { FounderGap } from "@/components/founder-gap";
 import { founderGapFromPage } from "@/lib/opportunities/gap";
 import { getPainGraph, getPainGraphPage } from "@/lib/paingraph/queries";
@@ -35,35 +36,34 @@ export default async function FounderGapPage({
   const gap = founderGapFromPage(page);
 
   return (
-    <main className="mx-auto w-full max-w-5xl flex-1 px-5 py-12">
-      <p className="text-xs uppercase tracking-[0.16em] text-copper">
+    <ConsumerShell>
+      <p className="text-xs uppercase tracking-[0.16em] text-[#1f8a4d]">
         Founder gap · {graph.category.name} · {graph.subcategory.name}
       </p>
-      <h1 className="mt-3 font-display text-5xl">{graph.title}</h1>
-      <p className="mt-5 max-w-2xl text-lg leading-8 text-muted">{graph.summary}</p>
-      <p className="mt-3 font-mono text-xs text-copper">
-        Founder {Math.round(graph.scores.founder)} · Pain{" "}
-        {Math.round(graph.scores.pain)} · Competition{" "}
-        {Math.round(graph.scores.competition)} · Evidence {graph.evidenceCount}
+      <h1 className="mt-3 font-display text-5xl text-[#12281a]">{graph.title}</h1>
+      <p className="mt-5 max-w-2xl text-lg leading-8 text-[#5d7263]">
+        {graph.summary}
       </p>
       <div className="mt-4 flex flex-wrap gap-4 text-sm">
-        <Link href={graph.href} className="text-copper hover:text-copper-2">
-          Consumer PainGraph
+        <Link href={graph.href} className="text-[#1f8a4d] hover:underline">
+          Open the customer PainGraph
         </Link>
-        <Link href="/top-pains?view=founder" className="text-copper hover:text-copper-2">
+        <Link href="/top-pains?view=founder" className="text-[#1f8a4d] hover:underline">
           Founder Billboard
         </Link>
       </div>
-      <section className="mt-12">
-        <h2 className="font-display text-3xl">Where existing options fall short</h2>
-        <p className="mt-3 max-w-2xl text-sm leading-6 text-muted">
-          This is scored from the same product-fit model consumers use. It does
-          not include build strategy or affiliate destinations.
+      <section className="mt-12 rounded-2xl border border-[#d7e2d4] bg-white p-5">
+        <h2 className="font-display text-3xl text-[#12281a]">
+          Where existing kinds fall short
+        </h2>
+        <p className="mt-3 max-w-2xl text-sm leading-6 text-[#5d7263]">
+          Scored with the same slider match customers use. A deal-breaker gap
+          means every kind is blocked when that concern is set to 10.
         </p>
         <div className="mt-8">
           <FounderGap gap={gap} />
         </div>
       </section>
-    </main>
+    </ConsumerShell>
   );
 }

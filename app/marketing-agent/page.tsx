@@ -51,10 +51,10 @@ export default async function MarketingAgentPage({
         How can PainGraphs monetise this demand?
       </h1>
       <p className="mt-4 max-w-2xl text-sm leading-6 text-muted">
-        Public clicks go through /go. Ads score uses intent, landing readiness,
-        and recorded economics. Country gaps use visitor or /go country headers
-        against destinations you pasted. A default URL does not close a country
-        gap. PainGraphs will not invent search volume or revenue.
+        A published PainGraph is unfinished until every kind has a pasted
+        destination. Public clicks go through /go. Use Needs destination first.
+        Country gaps use visitor or /go country headers. PainGraphs will not
+        invent search volume or revenue.
       </p>
       <nav className="mt-6 flex flex-wrap gap-2 text-xs uppercase tracking-[0.14em]">
         {GAPS.map((item) => (

@@ -15,7 +15,7 @@ export const metadata = {
 
 const freePoints = [
   "Browse public PainGraphs",
-  "Use recommendation sliders",
+    "Move sliders and keep matches",
   "Save and follow up to 5 pains",
   "In-app alerts; email only if you opt in",
   "Preview Affiliate and Founder insights",

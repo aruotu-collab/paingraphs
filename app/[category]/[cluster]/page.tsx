@@ -1,4 +1,6 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ConsumerShell } from "@/components/consumer-shell";
 import { PainCard } from "@/components/pain-card";
 import { listPainGraphs } from "@/lib/paingraph/queries";
 
@@ -17,16 +19,25 @@ export default async function ClusterPage({
   if (graphs.length === 0) notFound();
 
   return (
-    <main className="mx-auto w-full max-w-6xl flex-1 px-5 py-12">
-      <p className="text-xs uppercase tracking-[0.18em] text-copper">
-        {graphs[0].category.name} · {graphs[0].subcategory.name}
+    <ConsumerShell>
+      <p className="text-xs uppercase tracking-[0.18em] text-[#1f8a4d]">
+        <Link href={`/${graphs[0].category.slug}`} className="hover:underline">
+          {graphs[0].category.name}
+        </Link>
+        {" · "}
+        {graphs[0].subcategory.name}
       </p>
-      <h1 className="mt-3 font-display text-5xl">{graphs[0].subcategory.name}</h1>
+      <h1 className="mt-3 font-display text-5xl text-[#12281a]">
+        {graphs[0].subcategory.name}
+      </h1>
+      <p className="mt-4 max-w-2xl text-sm leading-6 text-[#5d7263]">
+        Open a PainGraph and move the sliders for what you cannot live with.
+      </p>
       <div className="mt-10 grid gap-4">
         {graphs.map((graph) => (
           <PainCard key={graph.id} graph={graph} />
         ))}
       </div>
-    </main>
+    </ConsumerShell>
   );
 }

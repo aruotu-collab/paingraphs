@@ -15,6 +15,7 @@ const LINKS = [
   { href: "/admin/rankings", label: "Rankings" },
   { href: "/admin/seo", label: "SEO" },
   { href: "/admin/billing", label: "Billing" },
+  { href: "/admin/visits", label: "Visits" },
   { href: "/admin/health", label: "Health" },
 ] as const;
 

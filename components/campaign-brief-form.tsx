@@ -19,8 +19,9 @@ export function CampaignBriefForm({
     >
       <h3 className="font-display text-2xl">Draft a campaign brief</h3>
       <p className="text-sm leading-6 text-muted">
-        PainGraphs writes a Google Ads-style brief. Nothing goes live. Break-even
-        CPC only appears after you record a conversion.
+        PainGraphs writes a Google Ads-style brief from the PainGraph’s slider
+        concerns. Nothing goes live. Break-even CPC only appears after you
+        record a conversion.
       </p>
       {painId ? (
         <input type="hidden" name="painId" value={painId} />

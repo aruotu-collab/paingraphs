@@ -78,6 +78,17 @@ const SEEDS: Record<string, PainNarrative> = {
     trap: "Extra cushion under the heel does not stop a seam sitting on the joint. Wide-fit still rubs if the toe is pointed.",
     turn: "Start with room over the joint. Cushion is secondary.",
   },
+  "pain-ebike-range": {
+    hook: "The sticker said 80km. You get about 35 once the hills and the cold kick in. Then you are walking a heavy bike home.",
+    scene:
+      "The advertised range is measured on flat ground, in mild weather, on a low assist setting. Hills, cold mornings, and stop-start traffic cut that number. This is a weekday commute now, not a weekend leisure complaint.",
+    mechanism:
+      "A hub motor works on the flat and fades on a climb, so you drain the battery fighting the hill. A mid-drive keeps assist when you slow down. Folding bikes are easy to carry and usually pack a smaller battery. Long-range frames last the week and you will not want to lift them.",
+    failedLoop:
+      "People drop to a lower assist setting, charge at work, or buy the bike with the biggest advertised kilometre number. Then they still run out on the way home.",
+    trap: "The last bike failed because the sticker range was measured on the flat. Paying more for a bigger advertised number does not fix hills or cold.",
+    turn: "The next choice is which tradeoff you can live with — hills, carrying, or range — not the biggest number on the box.",
+  },
 };
 
 function clip(value: string, max: number) {

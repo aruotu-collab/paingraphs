@@ -1,17 +1,22 @@
+import Link from "next/link";
 import { RunIngestButton } from "@/components/run-ingest-button";
 import { listPainTraffic } from "@/lib/admin/events";
-import { formatStamp } from "@/lib/admin/format";
-import { visitStats } from "@/lib/admin/visits";
+import { formatStamp, visitCountryLabel } from "@/lib/admin/format";
+import { listVisits, sourceLabel, visitStats } from "@/lib/admin/visits";
+import { listDestinationGaps } from "@/lib/destinations/completeness";
 import { latestIngestRun } from "@/lib/discovery/store";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminHealthPage() {
-  const [visits, traffic, ingest] = await Promise.all([
+  const [visits, traffic, ingest, recent, shopGaps] = await Promise.all([
     visitStats(),
     listPainTraffic(),
     latestIngestRun(),
+    listVisits({ hideBots: true, limit: 12 }),
+    listDestinationGaps(),
   ]);
+  const unfinished = shopGaps.filter((row) => row.missing.length > 0);
   const summary = ingest
     ? (JSON.parse(ingest.summary) as Record<string, unknown>)
     : null;
@@ -111,6 +116,102 @@ export default async function AdminHealthPage() {
             ))}
           </ul>
         </div>
+      </section>
+      <section className="mt-10">
+        <div className="flex items-end justify-between gap-3">
+          <h2 className="font-display text-2xl">Recent visitors</h2>
+          <Link href="/admin/visits" className="text-sm text-copper hover:text-copper-2">
+            Full visit log
+          </Link>
+        </div>
+        <ul className="mt-4">
+          {recent.length === 0 ? (
+            <li className="border-t border-line py-3 text-sm text-muted">
+              No public visits yet.
+            </li>
+          ) : (
+            recent.map((row) => {
+              const source = sourceLabel(row);
+              return (
+                <li
+                  key={row.id}
+                  className="flex flex-wrap justify-between gap-3 border-t border-line py-2 text-sm"
+                >
+                  <span className="min-w-0">
+                    <span className="block">{row.path}</span>
+                    <span className="block font-mono text-xs text-muted">
+                      {row.ip} · {visitCountryLabel(row.country)}
+                      {row.city ? ` · ${row.city}` : ""}
+                    </span>
+                  </span>
+                  <span className="font-mono text-xs text-muted">
+                    {source.source}
+                    {row.referrer ? ` · ${row.referrer}` : ""}
+                  </span>
+                </li>
+              );
+            })
+          )}
+        </ul>
+      </section>
+      <section className="mt-10">
+        <h2 className="font-display text-2xl">Top IPs / 7d</h2>
+        <ul className="mt-4">
+          {visits.topIps.map((row) => (
+            <li
+              key={row.ip}
+              className="flex flex-wrap justify-between gap-3 border-t border-line py-2 text-sm"
+            >
+              <span>
+                {row.ip}
+                <span className="ml-2 text-muted">
+                  {visitCountryLabel(row.country)}
+                </span>
+              </span>
+              <span className="font-mono text-xs text-muted">
+                {row.hits} · {row.primary}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </section>
+      <section className="mt-10">
+        <div className="flex items-end justify-between gap-3">
+          <h2 className="font-display text-2xl">Unfinished shop links</h2>
+          <Link
+            href="/marketing-agent?gap=needs-destination"
+            className="text-sm text-copper hover:text-copper-2"
+          >
+            Open Money Board
+          </Link>
+        </div>
+        <ul className="mt-4">
+          {unfinished.length === 0 ? (
+            <li className="border-t border-line py-3 text-sm text-muted">
+              Every published kind has a pasted destination.
+            </li>
+          ) : (
+            unfinished.map((row) => (
+              <li
+                key={row.id}
+                className="flex flex-wrap justify-between gap-3 border-t border-line py-2 text-sm"
+              >
+                <span>
+                  {row.title}
+                  <span className="ml-2 text-muted">
+                    {row.linked}/{row.products} linked
+                  </span>
+                </span>
+                <Link
+                  href={`/marketing-agent/${row.id}`}
+                  className="text-copper hover:text-copper-2"
+                >
+                  Paste destinations
+                </Link>
+              </li>
+            ))
+          )}
+        </ul>
       </section>
       <section className="mt-10">
         <h2 className="font-display text-2xl">PainGraph traffic</h2>

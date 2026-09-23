@@ -2,7 +2,7 @@ import { and, desc, eq, gte, like } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { pageVisits } from "@/lib/db/schema";
 import { ensureAdminTables } from "./db";
-import { classifyVisit } from "./source";
+import { classifyVisit, pickReferrer } from "./source";
 
 const recent = new Map<string, number>();
 const SECRET_PARAM = /^(token|code|password|secret|auth|email|magic|callbackurl|state)$/i;
@@ -63,6 +63,7 @@ function skipPath(path: string) {
   return (
     path.startsWith("/_next") ||
     path.startsWith("/api/") ||
+    path.startsWith("/admin") ||
     path === "/favicon.ico" ||
     path === "/robots.txt" ||
     path === "/sitemap.xml" ||
@@ -91,8 +92,9 @@ export async function recordPageVisit(input: {
 
   await ensureAdminTables();
   const geo = geoFromHeaders(input.headers);
-  const referrer = cleanReferrer(input.referrer || input.headers.get("referer"));
-  const landing = cleanReferrer(input.landingReferrer) || referrer;
+  const current = cleanReferrer(input.referrer || input.headers.get("referer"));
+  const landing = cleanReferrer(input.landingReferrer);
+  const referrer = pickReferrer(landing, current);
   const classified = classifyVisit({
     referrer,
     landingReferrer: landing,

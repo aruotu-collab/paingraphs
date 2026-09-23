@@ -1,4 +1,15 @@
-const SITE_HOSTS = /(^|\.)paingraphs\.com$|(^|\.)localhost$|paingraphs\.vercel\.app$/i;
+const SITE_HOSTS =
+  /(^|\.)paingraphs\.com$|(^|\.)localhost$|^127\.0\.0\.1$|paingraphs\.vercel\.app$/i;
+
+export function pickReferrer(landing?: string | null, current?: string | null) {
+  return (
+    firstExternal(landing ?? "") ||
+    firstExternal(current ?? "") ||
+    current ||
+    landing ||
+    ""
+  );
+}
 
 const HOST_SOURCES: [RegExp, string][] = [
   [/chatgpt\.com|chat\.openai\.com|(^|\.)openai\.com$/i, "ChatGPT"],

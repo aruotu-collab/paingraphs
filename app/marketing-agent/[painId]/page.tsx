@@ -84,7 +84,7 @@ export default async function MarketingAgentPainPage({
       </p>
       <h1 className="mt-3 font-display text-4xl">{graph.title}</h1>
       <p className="mt-4 max-w-2xl text-sm leading-6 text-muted">
-        Public Check price goes through /go so clicks can be counted. You can
+        Public shop links go through /go so clicks can be counted. You can
         save a default URL and optional country-specific URLs. Programme
         confirmation is yours after you join. PainGraphs will not invent a
         HopLink, Amazon search, or eBay search.
@@ -92,7 +92,7 @@ export default async function MarketingAgentPainPage({
       <ol className="mt-4 max-w-2xl list-decimal space-y-1 pl-5 text-sm leading-6 text-muted">
         <li>Open a programme for the product type.</li>
         <li>Join it and create a tracking URL for a specific SKU.</li>
-        <li>Paste that URL, optionally for a country. Check price goes live.</li>
+        <li>Paste that URL, optionally for a country. The shop button goes live.</li>
       </ol>
       <p className="mt-3 font-mono text-xs text-copper">
         Affiliate {Math.round(graph.scores.affiliate)} · Intent{" "}

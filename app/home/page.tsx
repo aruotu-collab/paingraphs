@@ -10,9 +10,9 @@ import { formatAccessUntil } from "@/lib/billing/stripe";
 import { applySignupLenses } from "@/lib/identity/actions";
 import { isWorkspaceMode } from "@/lib/identity/constants";
 import { entitlements } from "@/lib/identity/profile";
-import { listBillboardRows, sortBillboard } from "@/lib/opportunities/board";
 import { todaysOpportunity } from "@/lib/opportunities/daily";
 import { founderGapFromPage } from "@/lib/opportunities/gap";
+import { listMatchLenses } from "@/lib/opportunities/match-lens";
 import { listMemberAlerts, unreadAlertCount } from "@/lib/alerts/store";
 import { listSavedPainIds } from "@/lib/paingraph/actions";
 import { getPainGraphPage, listPainGraphs } from "@/lib/paingraph/queries";
@@ -47,20 +47,18 @@ export default async function MemberHomePage({
   const mode = isWorkspaceMode(query.mode) ? query.mode : profile.primaryMode;
   const owner = capabilities.admin || capabilities.marketingAgent;
   const access = entitlements(profile, owner);
-  const [graphs, savedIds, board, affiliateDay, founderDay, unread, recentAlerts, billing] =
+  const [graphs, savedIds, affiliateDay, founderDay, unread, recentAlerts, billing, lenses] =
     await Promise.all([
       listPainGraphs(),
       listSavedPainIds(),
-      listBillboardRows(),
       todaysOpportunity("affiliate"),
       todaysOpportunity("founder"),
       unreadAlertCount(session.user.id),
       listMemberAlerts(session.user.id, 3),
       billingProfile(session.user.id),
+      listMatchLenses(),
     ]);
   const saved = graphs.filter((graph) => savedIds.includes(graph.id));
-  const affiliate = sortBillboard(board, "affiliate").slice(0, 6);
-  const founder = sortBillboard(board, "founder").slice(0, 6);
   const founderPage =
     mode === "build" && founderDay
       ? await getPainGraphPage(
@@ -78,8 +76,8 @@ export default async function MemberHomePage({
       </p>
       <h1 className="mt-3 font-display text-4xl">Solve, promote, or build.</h1>
       <p className="mt-4 max-w-2xl text-sm leading-6 text-muted">
-        One account. Consumer access is always on. Switch lenses without
-        creating a second login.
+        One account. Matches you keep land here. Promote and Build read the
+        same sliders.
       </p>
       <div className="mt-6">
         <ModeSwitcher current={mode} owner={owner} />
@@ -135,10 +133,10 @@ export default async function MemberHomePage({
 
       {mode === "solve" ? (
         <section className="mt-12">
-          <h2 className="font-display text-3xl">Saved pains</h2>
+          <h2 className="font-display text-3xl">Matches you kept</h2>
           {saved.length === 0 ? (
             <p className="mt-4 text-sm text-muted">
-              Open a public PainGraph and choose Save this pain. Updates land
+              Open a public PainGraph and choose Keep this match. Updates land
               in{" "}
               <Link href="/home/alerts" className="text-copper hover:text-copper-2">
                 Alerts
@@ -159,8 +157,8 @@ export default async function MemberHomePage({
         <section className="mt-12">
           <h2 className="font-display text-3xl">Affiliate opportunities</h2>
           <p className="mt-3 text-sm text-muted">
-            Save tracking URLs you already created. They stay private and never
-            replace the public PainGraphs destination.
+            Kinds that survive the default sliders, and whether a public shop
+            link exists. Private vault URLs never replace the public button.
           </p>
           <div className="mt-4 flex flex-wrap gap-4 text-sm">
             <Link href="/home/vault" className="text-copper hover:text-copper-2">
@@ -179,9 +177,17 @@ export default async function MemberHomePage({
             </div>
           ) : null}
           <div className="mt-6 grid gap-4">
-            {affiliate.map((graph) => (
-              <PainCard key={graph.id} graph={graph} />
-            ))}
+            {lenses
+              .slice()
+              .sort((left, right) => right.shopReady.length - left.shopReady.length)
+              .slice(0, 6)
+              .map((row) => (
+                <PainCard
+                  key={row.graph.id}
+                  graph={row.graph}
+                  note={`${row.surviving.length} kinds survive · ${row.shopReady.length} shop link${row.shopReady.length === 1 ? "" : "s"} · ${row.clicks} click${row.clicks === 1 ? "" : "s"}`}
+                />
+              ))}
           </div>
         </section>
       ) : null}
@@ -190,8 +196,8 @@ export default async function MemberHomePage({
         <section className="mt-12">
           <h2 className="font-display text-3xl">Founder opportunities</h2>
           <p className="mt-3 text-sm text-muted">
-            See where scored products still miss, then open the full gap
-            analysis. Build strategy stays off these pages.
+            Deal-breaker gaps from the same match engine. Build strategy stays
+            off these pages.
           </p>
           <Link
             href="/top-pains?view=founder"
@@ -218,9 +224,25 @@ export default async function MemberHomePage({
             </div>
           ) : null}
           <div className="mt-6 grid gap-4">
-            {founder.map((graph) => (
-              <PainCard key={graph.id} graph={graph} />
-            ))}
+            {lenses
+              .slice()
+              .sort(
+                (left, right) =>
+                  right.dealBreakers.length - left.dealBreakers.length,
+              )
+              .slice(0, 6)
+              .map((row) => (
+                <PainCard
+                  key={row.graph.id}
+                  graph={row.graph}
+                  href={`/founders/gap/${row.graph.id}`}
+                  note={
+                    row.dealBreakers.length > 0
+                      ? `Deal-breaker gaps: ${row.dealBreakers.map((item) => item.name).join(", ")}`
+                      : `${row.surviving.length} kinds survive default sliders`
+                  }
+                />
+              ))}
           </div>
         </section>
       ) : null}

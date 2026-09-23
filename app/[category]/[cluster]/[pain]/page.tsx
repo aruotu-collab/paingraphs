@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { PainRecommend } from "@/components/pain-recommend";
-import { SavePainButton } from "@/components/save-pain-button";
-import { listSavedPainIds } from "@/lib/paingraph/actions";
-import { headers } from "next/headers";
+import { PainCard } from "@/components/pain-card";
+import { PainMatch } from "@/components/pain-match";
 import { geoFromHeaders } from "@/lib/admin/visits";
+import { headers } from "next/headers";
+import { listSavedPainIds } from "@/lib/paingraph/actions";
+import { decodeProfile } from "@/lib/paingraph/profile-url";
 import { getPainGraphPage } from "@/lib/paingraph/queries";
-import { getSavedPriorities } from "@/lib/recommendations/store";
+import { getSavedProfile } from "@/lib/recommendations/store";
 import { getSession } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
@@ -30,83 +31,82 @@ export async function generateMetadata({ params }: { params: PainParams }) {
 
 export default async function PainGraphPage({
   params,
+  searchParams,
 }: {
   params: PainParams;
+  searchParams: Promise<{ m?: string }>;
 }) {
   const { category, cluster, pain } = await params;
+  const query = await searchParams;
   const country = geoFromHeaders(await headers()).country;
   const page = await getPainGraphPage(category, cluster, pain, country);
   if (!page) notFound();
   const session = await getSession();
   const saved = (await listSavedPainIds()).includes(page.id);
-  const savedPriorities = session
-    ? await getSavedPriorities(
-        session.user.id,
-        page.id,
-        page.criteria.map((item) => item.slug),
-      )
+  const slugs = page.criteria.map((item) => item.slug);
+  const urlProfile = decodeProfile(query.m, slugs);
+  const savedProfile = session
+    ? await getSavedProfile(session.user.id, page.id, slugs)
     : null;
 
   return (
-    <main className="mx-auto w-full max-w-5xl flex-1 px-5 py-12">
-      <a
-        href="#consult"
-        className="text-sm text-copper hover:text-copper-2"
-      >
-        Skip to the consult
-      </a>
-      <p className="mt-6 text-xs uppercase tracking-[0.18em] text-copper">
-        <Link href={`/${page.category.slug}`} className="hover:text-copper-2">
-          {page.category.name}
-        </Link>
-        {" · "}
-        <Link
-          href={`/${page.category.slug}/${page.subcategory.slug}`}
-          className="hover:text-copper-2"
-        >
-          {page.subcategory.name}
-        </Link>
-      </p>
-      <h1 className="mt-3 font-display text-5xl leading-tight">{page.h1}</h1>
+    <main className="flex-1 bg-[#eef3ea]">
+      <div className="mx-auto w-full max-w-7xl px-5 py-10">
+        <a href="#pain-match" className="text-sm text-[#1f8a4d] hover:underline">
+          Skip to what bothers you
+        </a>
+        <p className="mt-5 text-xs uppercase tracking-[0.18em] text-[#1f8a4d]">
+          <Link href={`/${page.category.slug}`} className="hover:underline">
+            {page.category.name}
+          </Link>
+          {" · "}
+          <Link
+            href={`/${page.category.slug}/${page.subcategory.slug}`}
+            className="hover:underline"
+          >
+            {page.subcategory.name}
+          </Link>
+        </p>
+        <p className="mt-6 max-w-3xl text-base leading-7 text-[#5d7263]">
+          {page.summary}
+        </p>
 
-      <div className="mt-10">
-        <PainRecommend
-          h1={page.h1}
-          savedPriorities={savedPriorities}
-          criteria={page.criteria}
-          products={page.products}
-          consumer={page.consumer}
-          closeLine={page.narrative.trap}
-          after={
-            <section className="border border-line p-5">
-              <h2 className="font-display text-2xl">Keep this PainGraph</h2>
-              <p className="mt-3 text-sm leading-6 text-muted">
-                Save this so we can stay in touch. You will see updates on
-                member home. Email is off until you turn it on.
-              </p>
-              <div className="mt-4">
-                <SavePainButton
-                  painId={page.id}
-                  saved={saved}
-                  signedIn={Boolean(session)}
-                />
-                {saved ? (
-                  <p className="mt-3 text-xs text-muted">
-                    Following updates.{" "}
-                    <Link href="/home/alerts" className="text-copper hover:text-copper-2">
-                      Manage email
-                    </Link>
-                    .
+        <div id="pain-match" className="mt-8 scroll-mt-28">
+          <PainMatch
+            painId={page.id}
+            href={page.href}
+            h1={page.h1}
+            signedIn={Boolean(session)}
+            saved={saved}
+            savedProfile={urlProfile ?? savedProfile}
+            criteria={page.criteria}
+            products={page.products}
+            evidenceCount={page.evidenceCount}
+            evidence={page.evidence}
+            after={
+              page.related.length > 0 ? (
+                <section>
+                  <h2 className="font-display text-2xl text-[#12281a]">
+                    Related pains
+                  </h2>
+                  <p className="mt-2 text-sm text-[#5d7263]">
+                    Same matching idea, different concern set.
                   </p>
-                ) : null}
-              </div>
-              <p className="mt-6 text-xs leading-5 text-muted">
-                PainGraphs may earn a commission from some links. Fit is based
-                on what you told me, not commission.
-              </p>
-            </section>
-          }
-        />
+                  <div className="mt-4 grid gap-4">
+                    {page.related.slice(0, 4).map((graph) => (
+                      <PainCard key={graph.id} graph={graph} />
+                    ))}
+                  </div>
+                </section>
+              ) : null
+            }
+          />
+        </div>
+        <p className="mt-8 max-w-3xl text-xs leading-5 text-[#5d7263]">
+          PainGraphs may earn a commission from some links. Fit is based on
+          what you said matters, not commission. Email stays off until you
+          turn it on in alerts.
+        </p>
       </div>
     </main>
   );
