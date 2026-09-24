@@ -33,9 +33,16 @@
 
 html {
   background: var(--ink);
+  overflow-x: clip;
+  overscroll-behavior-x: none;
+  touch-action: pan-y;
 }
 
 body {
+  max-width: 100%;
+  overflow-x: clip;
+  overscroll-behavior-x: none;
+  touch-action: pan-y;
   background: var(--ink);
   color: var(--paper);
   font-family: var(--font-sans), system-ui, sans-serif;

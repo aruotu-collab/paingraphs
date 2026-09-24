@@ -88,10 +88,10 @@ export function PainMatch({
   }
 
   return (
-    <div className="match-studio text-[#16301c]">
+    <div className="match-studio min-w-0 max-w-full overflow-x-clip text-[#16301c]">
       <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
         <div className="max-w-2xl">
-          <h1 className="font-display text-4xl leading-tight text-[#12281a] md:text-[2.7rem] md:leading-[1.15]">
+          <h1 className="font-display text-[1.85rem] leading-tight break-words text-[#12281a] sm:text-4xl md:text-[2.7rem] md:leading-[1.15]">
             {findLine(h1)}
           </h1>
           <p className="mt-4 max-w-xl text-base leading-7 text-[#5d7263]">
@@ -119,7 +119,7 @@ export function PainMatch({
       </ol>
 
       <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)]">
-        <section className="rounded-3xl border border-[#d7e2d4] bg-white p-5 shadow-sm md:p-6">
+        <section className="min-w-0 rounded-3xl border border-[#d7e2d4] bg-white p-5 shadow-sm md:p-6">
           <div className="flex items-start justify-between gap-3">
             <div>
               <h2 className="text-lg font-semibold">
@@ -150,7 +150,7 @@ export function PainMatch({
                         className="mt-1.5 size-2.5 shrink-0 rounded-full"
                         style={{ background: color }}
                       />
-                      <span className="text-sm font-medium leading-6">
+                      <span className="min-w-0 break-words text-sm font-medium leading-6">
                         {concernName(item)}
                       </span>
                     </div>
@@ -183,7 +183,7 @@ export function PainMatch({
           </label>
         </section>
 
-        <section className="rounded-3xl border border-[#cfe8d4] bg-[#f3fbf4] p-5 md:p-6">
+        <section className="min-w-0 rounded-3xl border border-[#cfe8d4] bg-[#f3fbf4] p-5 md:p-6">
           <div className="flex items-center justify-between gap-3">
             <div>
               <h2 className="text-lg font-semibold">Your top matches</h2>
@@ -195,7 +195,7 @@ export function PainMatch({
               Live results
             </span>
           </div>
-          <div className="mt-5 grid gap-4 sm:grid-cols-3">
+          <div className="mt-5 grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-3">
             {top.map((product, index) => (
               <MatchCard
                 key={product.id}
@@ -227,7 +227,7 @@ export function PainMatch({
         </section>
       </div>
 
-      <section className="mt-6 rounded-3xl border border-[#d7e2d4] bg-white p-5 shadow-sm md:p-6">
+      <section className="mt-6 min-w-0 overflow-x-clip rounded-3xl border border-[#d7e2d4] bg-white p-5 shadow-sm md:p-6">
         <div className="flex flex-wrap items-center gap-2 text-sm">
           <TabButton current={tab === "compare"} onClick={() => setTab("compare")}>
             Compare side by side
@@ -250,8 +250,8 @@ export function PainMatch({
         </div>
 
         {tab === "compare" ? (
-          <div className="mt-6 grid gap-8 lg:grid-cols-[minmax(0,1.4fr)_minmax(16rem,0.8fr)]">
-            <div>
+          <div className="mt-6 grid min-w-0 gap-8 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,0.8fr)]">
+            <div className="min-w-0">
               <h3 className="text-lg font-semibold">
                 How the top kinds match your concerns
               </h3>
@@ -259,8 +259,50 @@ export function PainMatch({
                 Longer bars = better match for your needs. This is suitability,
                 not a medical score.
               </p>
-              <div className="mt-5 overflow-x-auto">
-                <table className="w-full min-w-[520px] text-left text-sm">
+              <div className="mt-5 space-y-5 lg:hidden">
+                {criteria.map((item, row) => (
+                  <div key={item.slug} className="min-w-0">
+                    <p className="text-sm leading-5">
+                      <span
+                        className="mr-2 inline-block size-2 rounded-full"
+                        style={{ background: concernColor(row) }}
+                      />
+                      {concernName(item)}
+                    </p>
+                    <ul className="mt-2 space-y-2">
+                      {top.map((product, index) => {
+                        const score = product.scores[item.slug] ?? 0;
+                        return (
+                          <li key={product.id} className="min-w-0">
+                            <div className="flex items-center justify-between gap-2 text-xs text-[#5d7263]">
+                              <span className="min-w-0 truncate">
+                                {shortName(product.name)}
+                              </span>
+                              {showNumbers ? (
+                                <span className="shrink-0 font-medium text-[#16301c]">
+                                  {score}
+                                </span>
+                              ) : null}
+                            </div>
+                            <div className="mt-1 h-3 overflow-hidden rounded-full bg-[#eef3ea]">
+                              <div
+                                className="h-3 max-w-full rounded-full"
+                                style={{
+                                  width: `${score}%`,
+                                  background: productColor(index),
+                                  opacity: 0.45 + (score / 100) * 0.55,
+                                }}
+                              />
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-5 hidden min-w-0 max-w-full lg:block">
+                <table className="w-full text-left text-sm">
                   <thead>
                     <tr>
                       <th className="py-2 pr-3 font-medium text-[#5d7263]">
@@ -280,7 +322,7 @@ export function PainMatch({
                   <tbody>
                     {criteria.map((item, row) => (
                       <tr key={item.slug}>
-                        <th className="whitespace-nowrap py-2.5 pr-3 font-normal">
+                        <th className="max-w-[16rem] py-2.5 pr-3 font-normal leading-5">
                           <span
                             className="mr-2 inline-block size-2 rounded-full"
                             style={{ background: concernColor(row) }}
@@ -294,9 +336,9 @@ export function PainMatch({
                               {showNumbers ? (
                                 <span className="font-medium">{score}</span>
                               ) : (
-                                <div className="h-4 rounded-full bg-[#eef3ea]">
+                                <div className="h-4 overflow-hidden rounded-full bg-[#eef3ea]">
                                   <div
-                                    className="h-4 rounded-full"
+                                    className="h-4 max-w-full rounded-full"
                                     style={{
                                       width: `${score}%`,
                                       background: productColor(index),
@@ -324,7 +366,7 @@ export function PainMatch({
         ) : null}
 
         {tab === "why" ? (
-          <ul className="mt-6 grid gap-4 md:grid-cols-3">
+          <ul className="mt-6 grid gap-4 lg:grid-cols-3">
             {top.map((product) => (
               <li key={product.id} className="rounded-2xl border border-[#d7e2d4] p-4">
                 <p className="text-sm font-semibold">{product.name}</p>
@@ -360,7 +402,7 @@ export function PainMatch({
         ) : null}
       </section>
 
-      <div className="mt-6 grid gap-4 md:grid-cols-3">
+      <div className="mt-6 grid gap-4 lg:grid-cols-3">
         <FootNote title="Grounded in this pain">
           Insights from selected public complaints, not a fake review score.
         </FootNote>
@@ -405,10 +447,10 @@ function MatchCard({
     <article
       className={
         open
-          ? "flex h-full flex-col rounded-2xl border-2 border-[#1f8a4d] bg-white p-4"
+          ? "flex h-full min-w-0 flex-col rounded-2xl border-2 border-[#1f8a4d] bg-white p-4"
           : rank === 1
-            ? "flex h-full flex-col rounded-2xl border-2 border-[#1f8a4d] bg-white p-4"
-            : "flex h-full flex-col rounded-2xl border border-[#d7e2d4] bg-white p-4"
+            ? "flex h-full min-w-0 flex-col rounded-2xl border-2 border-[#1f8a4d] bg-white p-4"
+            : "flex h-full min-w-0 flex-col rounded-2xl border border-[#d7e2d4] bg-white p-4"
       }
     >
       <div

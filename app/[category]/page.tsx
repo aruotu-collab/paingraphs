@@ -34,7 +34,7 @@ export default async function CategoryPage({
         {" · "}
         {graphs[0].category.name}
       </p>
-      <h1 className="mt-3 font-display text-5xl text-[#12281a]">
+      <h1 className="mt-3 break-words font-display text-[2rem] leading-tight text-[#12281a] sm:text-5xl">
         {graphs[0].category.name}
       </h1>
       <p className="mt-4 max-w-2xl text-sm leading-6 text-[#5d7263]">

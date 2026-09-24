@@ -56,7 +56,7 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} ${instrument.variable} h-full antialiased`}
     >
-      <body className="flex min-h-full flex-col bg-ink text-paper">
+      <body className="flex min-h-full max-w-full flex-col overflow-x-clip bg-ink text-paper">
         <SiteHeader />
         <Suspense fallback={null}>
           <VisitTracker />

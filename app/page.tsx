@@ -17,7 +17,7 @@ export default async function HomePage() {
       <p className="text-xs uppercase tracking-[0.18em] text-[#1f8a4d]">
         PainGraph · move the sliders
       </p>
-      <h1 className="mt-3 max-w-3xl font-display text-5xl leading-tight text-[#12281a]">
+      <h1 className="mt-3 max-w-3xl font-display text-[2rem] leading-tight text-[#12281a] sm:text-5xl">
         Say what bothers you. See what usually fits.
       </h1>
       <p className="mt-5 max-w-2xl text-lg leading-8 text-[#5d7263]">

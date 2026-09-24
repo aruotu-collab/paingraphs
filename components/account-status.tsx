@@ -21,7 +21,10 @@ export async function AccountStatus() {
       <Link href="/login" className="text-muted hover:text-paper">
         Sign in
       </Link>
-      <Link href="/signup" className="bg-copper px-3 py-1.5 text-ink hover:bg-copper-2">
+      <Link
+        href="/signup"
+        className="bg-copper px-2.5 py-1.5 text-sm text-ink hover:bg-copper-2 sm:px-3"
+      >
         Get started
       </Link>
     </div>

@@ -5,9 +5,12 @@ import { PUBLIC_NAV } from "@/lib/nav";
 
 export function SiteHeader() {
   return (
-    <header className="sticky top-0 z-20 border-b border-line bg-ink/90 backdrop-blur">
-      <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-5">
-        <Link href="/" className="font-display text-xl tracking-tight text-paper">
+    <header className="sticky top-0 z-20 max-w-full overflow-x-clip border-b border-line bg-ink/90 backdrop-blur">
+      <div className="mx-auto flex h-14 min-w-0 max-w-6xl items-center justify-between gap-3 px-4 sm:px-5">
+        <Link
+          href="/"
+          className="min-w-0 shrink truncate font-display text-xl tracking-tight text-paper"
+        >
           PainGraphs
         </Link>
         <nav className="hidden items-center gap-6 text-sm text-muted md:flex">
@@ -17,14 +20,14 @@ export function SiteHeader() {
             </Link>
           ))}
         </nav>
-        <div className="flex items-center gap-3">
+        <div className="flex shrink-0 items-center gap-3">
           <OwnerNav />
           <AccountStatus />
         </div>
       </div>
-      <nav className="flex gap-4 overflow-x-auto border-t border-line px-5 py-2 text-sm text-muted md:hidden">
+      <nav className="flex max-w-full flex-wrap gap-x-4 gap-y-1.5 border-t border-line px-4 py-2 text-sm text-muted md:hidden">
         {PUBLIC_NAV.map((link) => (
-          <Link key={link.href} href={link.href} className="whitespace-nowrap hover:text-paper">
+          <Link key={link.href} href={link.href} className="hover:text-paper">
             {link.label}
           </Link>
         ))}

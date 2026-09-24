@@ -18,10 +18,10 @@ export function PainCard({
       <p className="text-xs uppercase tracking-[0.16em] text-[#5d7263]">
         {graph.category.name} · {graph.subcategory.name}
       </p>
-      <h2 className="mt-2 font-display text-2xl text-[#12281a]">{graph.title}</h2>
-      <p className="mt-3 text-sm leading-6 text-[#5d7263]">{graph.summary}</p>
+      <h2 className="mt-2 break-words font-display text-2xl text-[#12281a]">{graph.title}</h2>
+      <p className="mt-3 text-sm leading-6 break-words text-[#5d7263]">{graph.summary}</p>
       {graph.concerns.length > 0 ? (
-        <p className="mt-4 text-xs leading-5 text-[#3f6b4c]">
+        <p className="mt-4 text-xs leading-5 break-words text-[#3f6b4c]">
           {graph.concerns.map((item) => item.name).join(" · ")}
         </p>
       ) : null}

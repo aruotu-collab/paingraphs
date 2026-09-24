@@ -50,8 +50,8 @@ export default async function PainGraphPage({
     : null;
 
   return (
-    <main className="flex-1 bg-[#eef3ea]">
-      <div className="mx-auto w-full max-w-7xl px-5 py-10">
+    <main className="min-w-0 max-w-full flex-1 overflow-x-clip bg-[#eef3ea]">
+      <div className="mx-auto w-full min-w-0 max-w-7xl px-4 py-8 sm:px-5 sm:py-10">
         <a href="#pain-match" className="text-sm text-[#1f8a4d] hover:underline">
           Skip to what bothers you
         </a>
