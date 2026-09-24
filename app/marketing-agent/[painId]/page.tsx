@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { CampaignBriefForm } from "@/components/campaign-brief-form";
 import { ConversionForm } from "@/components/conversion-form";
 import { DestinationForm } from "@/components/destination-form";
+import { ListingForm } from "@/components/listing-form";
 import { ProgrammeList } from "@/components/programme-list";
 import {
   clickCounts,
@@ -11,6 +12,7 @@ import {
   listDestinationsForPain,
   productsForPain,
 } from "@/lib/destinations/store";
+import { listListingsForPain } from "@/lib/listings/store";
 import { geographyLens } from "@/lib/geography/arbitrage";
 import { formatCountryCodes } from "@/lib/geography/codes";
 import { visitCountriesForPath } from "@/lib/geography/store";
@@ -27,16 +29,25 @@ export default async function MarketingAgentPainPage({
   params: Promise<{ painId: string }>;
 }) {
   const { painId } = await params;
-  const [graphs, products, destinations, clicks, revenue, painHistory, affiliateHistory] =
-    await Promise.all([
-      listAllPainGraphs(),
-      productsForPain(painId),
-      listDestinationsForPain(painId),
-      clickCounts(),
-      conversionTotals(),
-      rankHistoryFor(painId, "pain", 7),
-      rankHistoryFor(painId, "affiliate", 7),
-    ]);
+  const [
+    graphs,
+    products,
+    destinations,
+    listings,
+    clicks,
+    revenue,
+    painHistory,
+    affiliateHistory,
+  ] = await Promise.all([
+    listAllPainGraphs(),
+    productsForPain(painId),
+    listDestinationsForPain(painId),
+    listListingsForPain(painId),
+    clickCounts(),
+    conversionTotals(),
+    rankHistoryFor(painId, "pain", 7),
+    rankHistoryFor(painId, "affiliate", 7),
+  ]);
   const graph = graphs.find((item) => item.id === painId);
   if (!graph) notFound();
   const [visitCountries, clickCountries] = await Promise.all([
@@ -70,6 +81,12 @@ export default async function MarketingAgentPainPage({
     existing.push(destination);
     destinationsByProduct.set(destination.productId, existing);
   }
+  const listingsByProduct = new Map<string, typeof listings>();
+  for (const listing of listings) {
+    const existing = listingsByProduct.get(listing.productId) ?? [];
+    existing.push(listing);
+    listingsByProduct.set(listing.productId, existing);
+  }
   const programmesByProduct = new Map<string, typeof programmes>();
   for (const programme of programmes) {
     const existing = programmesByProduct.get(programme.productId) ?? [];
@@ -93,6 +110,7 @@ export default async function MarketingAgentPainPage({
         <li>Open a programme for the product type.</li>
         <li>Join it and create a tracking URL for a specific SKU.</li>
         <li>Paste that URL, optionally for a country. The shop button goes live.</li>
+        <li>Paste named products for the kind. Those names appear when someone opens the type.</li>
       </ol>
       <p className="mt-3 font-mono text-xs text-copper">
         Affiliate {Math.round(graph.scores.affiliate)} · Intent{" "}
@@ -169,6 +187,18 @@ export default async function MarketingAgentPainPage({
                   painId={painId}
                   productId={product.id}
                   destinations={productDestinations}
+                />
+                <h3 className="mt-6 text-xs uppercase tracking-[0.16em] text-copper">
+                  Named products
+                </h3>
+                <p className="mt-2 text-xs leading-5 text-muted">
+                  Real names as sold, with a tracking URL. PainGraphs will not
+                  invent a brand.
+                </p>
+                <ListingForm
+                  painId={painId}
+                  productId={product.id}
+                  listings={listingsByProduct.get(product.id) ?? []}
                 />
               </article>
             );

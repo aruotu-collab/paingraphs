@@ -94,6 +94,13 @@ export const CLUSTERS: CatalogCluster[] = [
     name: "Electric bicycles",
     summary: "Range, hills, weight, and weather on a real commute.",
   },
+  {
+    id: "cl-personal-care-toenails",
+    categoryId: "cat-personal-care",
+    slug: "toenails",
+    name: "Toenails",
+    summary: "Thick, yellow nails that cream does not clear.",
+  },
 ];
 
 export const PRODUCTS: CatalogProduct[] = [
@@ -237,6 +244,33 @@ export const PRODUCTS: CatalogProduct[] = [
     whoFor: "Best if the ride is long and you never have to carry the bike.",
     searchQuery: "long range electric bike commuter battery",
     priceBand: "£1,800–£4,000",
+  },
+  {
+    id: "prod-6ffcce3",
+    slug: "thick-toenails-urea-thin",
+    name: "Urea and thinning",
+    summary: "Softens and files the slab so anything else can reach the bed.",
+    whoFor: "Best if the nail is thick and paint has been sitting on top for years.",
+    searchQuery: "urea cream thick toenail fungus debridement",
+    priceBand: "£8–£25",
+  },
+  {
+    id: "prod-9b0546c8",
+    slug: "thick-toenails-podiatry",
+    name: "Podiatry or GP",
+    summary: "Confirms fungus, cuts what you cannot, and discusses oral treatment.",
+    whoFor: "Best if this has lasted years, hurts at work, or you have diabetes.",
+    searchQuery: "podiatrist thick toenail fungus GP",
+    priceBand: "varies",
+  },
+  {
+    id: "prod-9e469de5",
+    slug: "thick-toenails-otc-paint",
+    name: "OTC antifungal paint",
+    summary: "Cheap and visible. Often fails once the nail is a slab.",
+    whoFor: "Best if the nail is still thin and this just started.",
+    searchQuery: "toenail fungus paint cream thick nail",
+    priceBand: "£6–£20",
   },
 ];
 
@@ -1254,6 +1288,159 @@ export const PAINS: CatalogPain[] = [
       },
     ],
     consumer: PAIN_CONSUMERS["pain-ebike-range"],
+  },
+  {
+    id: "pain-thick-toenails",
+    clusterId: "cl-personal-care-toenails",
+    slug: "thick-toenails",
+    title: "Toenails that do not stay thick and ugly",
+    h1: "When the cream never clears the nail",
+    problem:
+      "The nail is thick, yellow, or crumbling. Creams and paints cycle for years. People hide sandals, and a clinician sometimes says live with it until it hurts at work.",
+    analysis:
+      "Paint sits on a slab. Urea and filing open the plate so something can reach the bed. A clinic is the reset when years of bottles have already failed, it is spreading, or the person has diabetes. Oral drugs are a medical decision, not a cart add-on. Fit is suitability, not a diagnosis.",
+    whyNow:
+      "People search after the third pharmacy paint, not at the first yellow spot.",
+    strategy: "affiliate now",
+    stage: 3,
+    painScore: 84,
+    intentScore: 80,
+    competitionScore: 62,
+    productGap: 55,
+    affiliateScore: 74,
+    organicScore: 76,
+    opportunity: 75,
+    trend: 28,
+    sensitive: true,
+    related: [],
+    searchPhrases: [
+      "thick toenail fungus cream not working",
+      "toenail paint sits on top",
+      "hide thick yellow toenails sandals",
+    ],
+    youtubeQueries: ["thick toenail fungus cream failed", "urea cream thick toenail"],
+    criteria: [
+      {
+        slug: "shelf",
+        name: "The same pharmacy bottle has already failed you for a year",
+        detail: "Another tube is a stall, not a plan.",
+      },
+      {
+        slug: "ontop",
+        name: "Every cream just sits on top. The slab stays thick.",
+        detail: "Nothing gets under the plate — only shine on top.",
+      },
+      {
+        slug: "shoes",
+        name: "Closed shoes start hurting before the afternoon is over",
+        detail: "Thickness that presses in work shoes, not only how it looks.",
+      },
+      {
+        slug: "hide",
+        name: "Sandals, pools, the locker room — skipped because of how it looks",
+        detail: "The social hide — not a medical score.",
+      },
+      {
+        slug: "dismissed",
+        name: "Told to live with it until work actually hurts",
+        detail: "Sent home with another cream after years of this.",
+      },
+      {
+        slug: "crumbles",
+        name: "After another 12-week paint it crumbles, lifts, or smells",
+        detail: "Breakup and smell after a full advertised course.",
+      },
+      {
+        slug: "nightly",
+        name: "Filing and treating every night — if something would finally get underneath",
+        detail: "A slow home routine you will keep, versus a one-visit reset.",
+      },
+      {
+        slug: "spread",
+        name: "Jumping from the big toe to the next one",
+        detail: "One ugly nail versus a set that is spreading.",
+      },
+      {
+        slug: "stain",
+        name: "Cheap paints stain the skin and still leave a ridge you can tap",
+        detail: "Mess and a hard ridge after the colour wears off.",
+      },
+      {
+        slug: "person",
+        name: "A person at the root — not another tube",
+        detail: "Clinic or GP kind. Not a product you add to a cart.",
+      },
+    ],
+    products: [
+      {
+        productId: "prod-9e469de5",
+        scores: {
+          shelf: 22,
+          ontop: 24,
+          shoes: 30,
+          hide: 40,
+          dismissed: 20,
+          crumbles: 26,
+          nightly: 86,
+          spread: 34,
+          stain: 28,
+          person: 18,
+        },
+        note: "Useful early. Easy to keep buying after it has already failed.",
+      },
+      {
+        productId: "prod-6ffcce3",
+        scores: {
+          shelf: 74,
+          ontop: 88,
+          shoes: 86,
+          hide: 68,
+          dismissed: 48,
+          crumbles: 62,
+          nightly: 70,
+          spread: 50,
+          stain: 72,
+          person: 42,
+        },
+        note: "Unsexy. Usually the missing step before any oil.",
+      },
+      {
+        productId: "prod-9b0546c8",
+        scores: {
+          shelf: 90,
+          ontop: 86,
+          shoes: 80,
+          hide: 78,
+          dismissed: 94,
+          crumbles: 86,
+          nightly: 38,
+          spread: 92,
+          stain: 80,
+          person: 96,
+        },
+        note: "Right reset. Oral drugs are a medical decision, not a cart add-on.",
+      },
+    ],
+    signals: [
+      {
+        rawQuote:
+          "Three bottles later and it still looks like a hoof. The paint just sits on top.",
+        sourceKind: "composite",
+        sourceLabel: "Composite of repeated public review language",
+      },
+      {
+        rawQuote:
+          "I stopped wearing sandals. The GP said live with it unless it starts to hurt at work.",
+        sourceKind: "composite",
+        sourceLabel: "Composite of repeated public review language",
+      },
+      {
+        rawQuote:
+          "It crumbled and smelled after the 12-week course. The next toe is going the same way.",
+        sourceKind: "composite",
+        sourceLabel: "Composite of repeated public review language",
+      },
+    ],
   },
 ];
 

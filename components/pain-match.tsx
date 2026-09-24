@@ -53,6 +53,7 @@ export function PainMatch({
   const [hideBreakers, setHideBreakers] = useState(false);
   const [showNumbers, setShowNumbers] = useState(false);
   const [tab, setTab] = useState<"compare" | "why" | "buyers">("compare");
+  const [openKind, setOpenKind] = useState<string | null>(null);
   const ranked = useMemo(
     () => rankMatches(products, criteria, profile),
     [products, criteria, profile],
@@ -95,8 +96,9 @@ export function PainMatch({
           </h1>
           <p className="mt-4 max-w-xl text-base leading-7 text-[#5d7263]">
             Everyone’s situation is different. Move the sliders for what bothers
-            you, and we’ll rank the kinds that fit — instantly. Shop links appear
-            only when a real destination has been pasted.
+            you, and we’ll rank the kinds that fit — instantly. Open a kind to
+            see named products. Shop links appear only when a real listing has
+            been pasted.
           </p>
         </div>
         <aside className="w-full max-w-sm rounded-2xl border border-[#f3d4c6] bg-[#fdeee6] p-5 text-sm leading-6 text-[#6a4a3d] shadow-sm">
@@ -113,7 +115,7 @@ export function PainMatch({
       <ol className="mt-8 flex flex-wrap gap-3 text-sm">
         <Step n="1" label="Tell us what matters" current />
         <Step n="2" label="See your matches" />
-        <Step n="3" label="Check details & buy" />
+        <Step n="3" label="Open a kind, then check names" />
       </ol>
 
       <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)]">
@@ -121,10 +123,11 @@ export function PainMatch({
           <div className="flex items-start justify-between gap-3">
             <div>
               <h2 className="text-lg font-semibold">
-                How much do these concerns matter to you?
+                How much do these pains matter?
               </h2>
               <p className="mt-1 text-sm text-[#5d7263]">
-                Move the sliders — the results update instantly.
+                Each line is a pain. Slide how true it is for you — the ranking
+                moves as you do.
               </p>
             </div>
             <button
@@ -140,31 +143,31 @@ export function PainMatch({
               const value = profile.importances[item.slug] ?? 0;
               const color = concernColor(index);
               return (
-                <li key={item.slug} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 sm:grid-cols-[minmax(9rem,12.5rem)_minmax(0,1fr)_8rem]">
-                  <div className="flex min-w-0 items-start gap-2">
-                    <span
-                      className="mt-1.5 size-2.5 shrink-0 rounded-full"
-                      style={{ background: color }}
-                    />
-                    <span className="text-sm font-medium leading-5">
-                      {concernName(item)}
-                    </span>
+                <li key={item.slug} className="space-y-2 border-t border-[#eef3ea] pt-4 first:border-t-0 first:pt-0">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex min-w-0 items-start gap-2">
+                      <span
+                        className="mt-1.5 size-2.5 shrink-0 rounded-full"
+                        style={{ background: color }}
+                      />
+                      <span className="text-sm font-medium leading-6">
+                        {concernName(item)}
+                      </span>
+                    </div>
+                    <p className="shrink-0 text-right text-sm">
+                      <span className="font-semibold">{value}</span>
+                      <span className="ml-1 text-xs text-[#5d7263]">
+                        {importanceLabel(value)}
+                      </span>
+                    </p>
                   </div>
-                  <p className="text-right text-sm sm:order-3 sm:w-28">
-                    <span className="font-semibold">{value}</span>
-                    <span className="ml-1 text-xs text-[#5d7263]">
-                      {importanceLabel(value)}
-                    </span>
-                  </p>
-                  <div className="col-span-2 sm:col-span-1 sm:order-2">
-                    <PainSlider
-                      label={`${concernName(item)} importance`}
-                      value={value}
-                      color={color}
-                      valueText={`${value} ${importanceLabel(value)}`}
-                      onChange={(next) => setImportance(item.slug, next)}
-                    />
-                  </div>
+                  <PainSlider
+                    label={`${concernName(item)} importance`}
+                    value={value}
+                    color={color}
+                    valueText={`${value} ${importanceLabel(value)}`}
+                    onChange={(next) => setImportance(item.slug, next)}
+                  />
                 </li>
               );
             })}
@@ -201,9 +204,21 @@ export function PainMatch({
                 confidence={confidence}
                 painId={painId}
                 path={href}
+                open={openKind === product.id}
+                onOpen={() =>
+                  setOpenKind((current) =>
+                    current === product.id ? null : product.id,
+                  )
+                }
               />
             ))}
           </div>
+          <KindListings
+            product={visible.find((item) => item.id === openKind) ?? null}
+            painId={painId}
+            path={href}
+            onClose={() => setOpenKind(null)}
+          />
           {extra > 0 ? (
             <p className="mt-4 text-center text-sm text-[#1f8a4d]">
               {extra} more kind{extra === 1 ? "" : "s"} ranked below
@@ -374,20 +389,26 @@ function MatchCard({
   confidence,
   painId,
   path,
+  open,
+  onOpen,
 }: {
   product: RankedMatch;
   rank: number;
   confidence: string;
   painId: string;
   path: string;
+  open: boolean;
+  onOpen: () => void;
 }) {
   const tags = product.bestFor.slice(0, 3);
   return (
     <article
       className={
-        rank === 1
+        open
           ? "flex h-full flex-col rounded-2xl border-2 border-[#1f8a4d] bg-white p-4"
-          : "flex h-full flex-col rounded-2xl border border-[#d7e2d4] bg-white p-4"
+          : rank === 1
+            ? "flex h-full flex-col rounded-2xl border-2 border-[#1f8a4d] bg-white p-4"
+            : "flex h-full flex-col rounded-2xl border border-[#d7e2d4] bg-white p-4"
       }
     >
       <div
@@ -425,15 +446,106 @@ function MatchCard({
           <li key={tag}>✓ {sentence(tag)}</li>
         ))}
       </ul>
-      <div className="mt-auto pt-4">
+      <div className="mt-auto space-y-2 pt-4">
+        <button
+          type="button"
+          onClick={onOpen}
+          className={
+            open
+              ? "block w-full rounded-lg bg-[#1f8a4d] px-3 py-2 text-center text-sm text-white"
+              : "block w-full rounded-lg bg-[#e7f6ea] px-3 py-2 text-center text-sm text-[#1f8a4d] hover:bg-[#d5efdb]"
+          }
+        >
+          {open ? "Hide named products" : "See named products"}
+        </button>
         <ShopLink
           href={product.destinationUrl}
-          featured={rank === 1 && !product.blocked}
+          featured={false}
           painId={painId}
           path={path}
         />
       </div>
     </article>
+  );
+}
+
+function KindListings({
+  product,
+  painId,
+  path,
+  onClose,
+}: {
+  product: RankedMatch | null;
+  painId: string;
+  path: string;
+  onClose: () => void;
+}) {
+  if (!product) return null;
+  const names = product.listings ?? [];
+  return (
+    <div
+      id="kind-listings"
+      className="mt-5 rounded-2xl border border-[#cfe8d4] bg-white p-5"
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-xs uppercase tracking-[0.16em] text-[#1f8a4d]">
+            Named products
+          </p>
+          <h3 className="mt-1 text-lg font-semibold">{product.name}</h3>
+          <p className="mt-1 text-sm text-[#5d7263]">
+            Pasted listings for this kind. Fit already came from your sliders —
+            commission does not change the order.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="text-sm text-[#1f8a4d] hover:underline"
+        >
+          Close
+        </button>
+      </div>
+      {names.length > 0 ? (
+        <ul className="mt-4 divide-y divide-[#eef3ea]">
+          {names.map((item) => (
+            <li
+              key={item.id}
+              className="flex flex-wrap items-center justify-between gap-3 py-3"
+            >
+              <div>
+                <p className="text-sm font-medium">{item.name}</p>
+                <p className="text-xs text-[#5d7263]">{item.merchant}</p>
+              </div>
+              <a
+                href={item.href}
+                rel="nofollow sponsored"
+                className="rounded-lg bg-[#1f8a4d] px-3 py-1.5 text-sm text-white hover:bg-[#187a42]"
+                onClick={() => {
+                  void fetch("/api/event", {
+                    method: "POST",
+                    headers: { "content-type": "application/json" },
+                    body: JSON.stringify({
+                      kind: "paingraph_click",
+                      path,
+                      painId,
+                    }),
+                    keepalive: true,
+                  });
+                }}
+              >
+                See shop link
+              </a>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="mt-4 text-sm leading-6 text-[#5d7263]">
+          No named products pasted for this kind yet. The kind still ranks from
+          what you said matters.
+        </p>
+      )}
+    </div>
   );
 }
 

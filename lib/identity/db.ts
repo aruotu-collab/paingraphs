@@ -272,4 +272,43 @@ async function createTables() {
   await tryExecute(
     "ALTER TABLE alert_preferences ADD COLUMN email_search_updates INTEGER NOT NULL DEFAULT 0",
   );
+  await db.run(sql`
+    CREATE TABLE IF NOT EXISTS product_listings (
+      id TEXT PRIMARY KEY,
+      pain_id TEXT NOT NULL REFERENCES pains(id) ON DELETE CASCADE,
+      product_id TEXT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      url TEXT NOT NULL,
+      country TEXT NOT NULL DEFAULT '*',
+      created_at INTEGER NOT NULL
+    )
+  `);
+  await db.run(sql`
+    CREATE INDEX IF NOT EXISTS product_listings_pain_product_idx
+    ON product_listings (pain_id, product_id)
+  `);
+  await db.run(sql`
+    CREATE TABLE IF NOT EXISTS listing_clicks (
+      id TEXT PRIMARY KEY,
+      listing_id TEXT NOT NULL,
+      pain_id TEXT NOT NULL REFERENCES pains(id) ON DELETE CASCADE,
+      product_id TEXT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+      visitor_country TEXT,
+      source_path TEXT,
+      created_at INTEGER NOT NULL
+    )
+  `);
+  await db.run(sql`
+    CREATE TABLE IF NOT EXISTS pain_misses (
+      id TEXT PRIMARY KEY,
+      query TEXT NOT NULL,
+      normalized TEXT NOT NULL UNIQUE,
+      hits INTEGER NOT NULL DEFAULT 1,
+      last_seen_at INTEGER NOT NULL,
+      created_at INTEGER NOT NULL
+    )
+  `);
+  await db.run(sql`
+    CREATE INDEX IF NOT EXISTS pain_misses_hits_idx ON pain_misses (hits)
+  `);
 }

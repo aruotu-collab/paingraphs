@@ -21,12 +21,13 @@ export default async function HomePage() {
         Say what bothers you. See what usually fits.
       </h1>
       <p className="mt-5 max-w-2xl text-lg leading-8 text-[#5d7263]">
-        Open a PainGraph, set how much each concern matters, and kinds re-rank
-        live. Shop links appear only when a real destination has been pasted.
+        Type what bothers you. If we have a PainGraph, sliders rank the kinds
+        that fit. Open a kind to see named products — only when a real listing
+        has been pasted.
       </p>
 
       <section className="mt-12">
-        <h2 className="font-display text-3xl text-[#12281a]">Find a pain</h2>
+        <h2 className="font-display text-3xl text-[#12281a]">What annoys you?</h2>
         <div className="mt-5 flex flex-wrap gap-2">
           {categories.map((category) => (
             <Link

@@ -15,6 +15,8 @@ import {
 import { informativeQuotes, isInformativeQuote } from "@/lib/paingraph/quotes";
 import { listDestinationsForPain } from "@/lib/destinations/store";
 import { goHref, pickPublicDestination } from "@/lib/destinations/url";
+import { listListingsForPain, pickListingsForProduct } from "@/lib/listings/store";
+import { listingGoHref, merchantFromUrl } from "@/lib/listings/url";
 import { consumerIntelFor } from "./consumer";
 import { concernName } from "./match";
 import { narrativeFor } from "./narrative-store";
@@ -156,16 +158,18 @@ export async function getPainGraphPage(
   );
   if (!graph) return null;
 
-  const [criterionRows, signalRows, fitRows, destinations] = await Promise.all([
-    db.select().from(criteria).where(eq(criteria.painId, graph.id)),
-    db.select().from(painSignals).where(eq(painSignals.painId, graph.id)),
-    db
-      .select({ fit: productFits, product: products })
-      .from(productFits)
-      .innerJoin(products, eq(productFits.productId, products.id))
-      .where(eq(productFits.painId, graph.id)),
-    listDestinationsForPain(graph.id),
-  ]);
+  const [criterionRows, signalRows, fitRows, destinations, listings] =
+    await Promise.all([
+      db.select().from(criteria).where(eq(criteria.painId, graph.id)),
+      db.select().from(painSignals).where(eq(painSignals.painId, graph.id)),
+      db
+        .select({ fit: productFits, product: products })
+        .from(productFits)
+        .innerJoin(products, eq(productFits.productId, products.id))
+        .where(eq(productFits.painId, graph.id)),
+      listDestinationsForPain(graph.id),
+      listListingsForPain(graph.id),
+    ]);
   const productCards = fitRows.map(({ fit, product }) => {
     const scores = JSON.parse(fit.scores) as Record<string, number>;
     const destination = pickPublicDestination(
@@ -173,6 +177,24 @@ export async function getPainGraphPage(
       product.id,
       visitorCountry,
     );
+    const named = pickListingsForProduct(
+      listings,
+      product.id,
+      visitorCountry,
+    ).map((row) => ({
+      id: row.id,
+      name: row.name,
+      href: listingGoHref(row.id, graph.href),
+      merchant: merchantFromUrl(row.url),
+    }));
+    if (named.length === 0 && destination) {
+      named.push({
+        id: destination.id,
+        name: `Shop on ${merchantFromUrl(destination.url)}`,
+        href: goHref(destination.id, graph.href),
+        merchant: merchantFromUrl(destination.url),
+      });
+    }
     return {
       id: product.id,
       name: product.name,
@@ -183,6 +205,7 @@ export async function getPainGraphPage(
       note: fit.note,
       match: average(Object.values(scores)),
       destinationUrl: destination ? goHref(destination.id, graph.href) : null,
+      listings: named,
     };
   });
 

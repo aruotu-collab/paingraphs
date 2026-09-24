@@ -33,6 +33,13 @@ export type PainGraph = {
   concerns: { slug: string; name: string }[];
 };
 
+export type ProductListing = {
+  id: string;
+  name: string;
+  href: string;
+  merchant: string;
+};
+
 export type RecommendedProduct = {
   id: string;
   name: string;
@@ -43,6 +50,7 @@ export type RecommendedProduct = {
   note: string;
   match: number;
   destinationUrl: string | null;
+  listings: ProductListing[];
 };
 
 export type PainCriterion = {

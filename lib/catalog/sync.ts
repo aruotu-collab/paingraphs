@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, notInArray } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   affiliateProgrammes,
@@ -157,6 +157,7 @@ async function writeCatalog() {
         },
       });
 
+    const slugs = pain.criteria.map((item) => item.slug);
     for (const item of pain.criteria) {
       await db
         .insert(criteria)
@@ -171,6 +172,13 @@ async function writeCatalog() {
           target: criteria.id,
           set: { name: item.name, detail: item.detail, slug: item.slug },
         });
+    }
+    if (slugs.length > 0) {
+      await db
+        .delete(criteria)
+        .where(
+          and(eq(criteria.painId, pain.id), notInArray(criteria.slug, slugs)),
+        );
     }
 
     for (const fit of pain.products) {

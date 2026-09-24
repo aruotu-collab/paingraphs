@@ -643,6 +643,37 @@ export const affiliateDestinations = sqliteTable(
   ],
 );
 
+export const productListings = sqliteTable(
+  "product_listings",
+  {
+    id: text("id").primaryKey(),
+    painId: text("pain_id")
+      .notNull()
+      .references(() => pains.id, { onDelete: "cascade" }),
+    productId: text("product_id")
+      .notNull()
+      .references(() => products.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    url: text("url").notNull(),
+    country: text("country").notNull().default("*"),
+    createdAt: timestamp("created_at"),
+  },
+  (table) => [index("product_listings_pain_product_idx").on(table.painId, table.productId)],
+);
+
+export const painMisses = sqliteTable(
+  "pain_misses",
+  {
+    id: text("id").primaryKey(),
+    query: text("query").notNull(),
+    normalized: text("normalized").notNull().unique(),
+    hits: integer("hits").$defaultFn(() => 1).notNull(),
+    lastSeenAt: timestamp("last_seen_at"),
+    createdAt: timestamp("created_at"),
+  },
+  (table) => [index("pain_misses_hits_idx").on(table.hits)],
+);
+
 export const affiliateProgrammes = sqliteTable(
   "affiliate_programmes",
   {

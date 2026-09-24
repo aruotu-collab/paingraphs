@@ -70,7 +70,7 @@ export type RankedMatch = RecommendedProduct & {
 };
 
 export function defaultProfile(slugs: string[]): PainProfile {
-  const preset = [9, 8, 6, 7, 8, 4, 7, 3, 5];
+  const preset = [9, 8, 6, 7, 8, 4, 7, 3, 5, 7];
   const importances: Record<string, number> = {};
   slugs.forEach((slug, index) => {
     importances[slug] = preset[index] ?? 5;
