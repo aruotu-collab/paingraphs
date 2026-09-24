@@ -646,14 +646,21 @@ function KeepMatch({
   const [pending, setPending] = useState(false);
   const [kept, setKept] = useState(saved);
   const [copied, setCopied] = useState(false);
+  const [needAccount, setNeedAccount] = useState<"keep" | "share" | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  function accountHref(path: "/login" | "/signup") {
+    const next = window.location.pathname + window.location.search;
+    return `${path}?next=${encodeURIComponent(next)}&reason=keep`;
+  }
 
   return (
     <div className="rounded-2xl border border-[#d7e2d4] bg-white p-4">
       <p className="text-sm font-semibold">Keep this match</p>
       <p className="mt-2 text-sm leading-6 text-[#5d7263]">
-        Save these sliders with this PainGraph, or copy a link that restores
-        them.
+        {signedIn
+          ? "Save these sliders with this PainGraph, or copy a link that restores them."
+          : "You need a free account to keep this match or save a share on your profile."}
       </p>
       <div className="mt-3 flex flex-wrap gap-3">
         <button
@@ -661,11 +668,11 @@ function KeepMatch({
           disabled={pending}
           className="text-sm text-[#1f8a4d] hover:underline disabled:opacity-60"
           onClick={async () => {
-          if (!signedIn) {
-            const next = window.location.pathname + window.location.search;
-            router.push(`/login?next=${encodeURIComponent(next)}`);
-            return;
-          }
+            if (!signedIn) {
+              setNeedAccount("keep");
+              setError(null);
+              return;
+            }
             setPending(true);
             setError(null);
             const result = await keepMatch(painId, slugs, profile, href);
@@ -684,6 +691,11 @@ function KeepMatch({
           type="button"
           className="text-sm text-[#1f8a4d] hover:underline"
           onClick={async () => {
+            if (!signedIn) {
+              setNeedAccount("share");
+              setError(null);
+              return;
+            }
             const url = window.location.href;
             try {
               if (navigator.share) {
@@ -704,6 +716,31 @@ function KeepMatch({
           {copied ? "Link copied" : "Share this match"}
         </button>
       </div>
+      {needAccount ? (
+        <div className="mt-3 rounded-xl border border-[#f3d4c6] bg-[#fdeee6] p-3">
+          <p className="text-sm leading-6 text-[#6a4a3d]">
+            {needAccount === "keep"
+              ? "Sign in or create a free account first. We will bring you back to these sliders."
+              : "Sign in or create a free account first so we can keep this share with your match."}
+          </p>
+          <div className="mt-3 flex flex-wrap gap-3">
+            <button
+              type="button"
+              className="rounded-lg bg-[#1f8a4d] px-3 py-1.5 text-sm text-white hover:bg-[#187a42]"
+              onClick={() => router.push(accountHref("/login"))}
+            >
+              Sign in
+            </button>
+            <button
+              type="button"
+              className="rounded-lg border border-[#1f8a4d] px-3 py-1.5 text-sm text-[#1f8a4d] hover:bg-[#e7f6ea]"
+              onClick={() => router.push(accountHref("/signup"))}
+            >
+              Create an account
+            </button>
+          </div>
+        </div>
+      ) : null}
       {error ? <p className="mt-2 text-xs text-[#b45309]">{error}</p> : null}
     </div>
   );
